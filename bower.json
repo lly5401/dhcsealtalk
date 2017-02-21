@@ -1,0 +1,27 @@
+{
+  "name": "web-im-v2",
+  "version": "2.0.0",
+  "authors": [
+    "Ariel Yang <arielyang@gmail.com>"
+  ],
+  "description": "RongCloud Web SDK.",
+  "keywords": [
+    "RongCloud",
+    "Web",
+    "IM"
+  ],
+  "license": "MIT",
+  "homepage": "http://rong.io",
+  "dependencies": {
+    "angular": "~1.4.5",
+    "angular-bootstrap": "~0.13.4",
+    "angular-ui-event": "~1.0.0",
+    "angular-ui-router": "~0.2.15",
+    "bootstrap": "~3.3.5",
+    "angular-ui-switch": "~0.1.1",
+    "angular-shims-placeholder": "cvn/angular-shims-placeholder#~0.4.6"
+  },
+  "devDependencies": {
+    "angular-mocks": "~1.4.8"
+  }
+}

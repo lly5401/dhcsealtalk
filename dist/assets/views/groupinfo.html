@@ -1,0 +1,48 @@
+<div class="chatBoxInner">
+              <div class="box_hd">
+                    <div class="title_wrap">
+
+                        <a class="phone_return" ng-click="back()"><span class="backArrow"><</span>返回</a>
+                        <div class="title">
+                            <a class="title_name">群资料</a>
+                            <!--<span class="title_count ">(16)</span>
+                            <i class="Presence Presence&#45;&#45;stacked Presence&#45;&#45;chatBox"></i>-->
+                        </div>
+                        <a class="editBtn" href="javascript:void 0" ng-click="isEditable=!isEditable"><span ng-if="!isEditable">编辑</span><span ng-if="isEditable">取消</span></a>
+                    </div>
+                </div>
+
+<div id="functionBox">
+
+  <div class="groupInfo">
+      <div class="groupData clearfix">
+          <div class="photo">
+              <img class="img" ng-show="groupInfo.imgSrc" ng-src="{{groupInfo.imgSrc||'assets/img/barBg.png'}}" alt="">
+              <div id="portrait" ng-show="!groupInfo.imgSrc" class="portrait">{{groupInfo.firstchar}}</div>
+          </div>
+          <div class="info">
+              <h3 class="groupName">
+                  <span class="groupName_text">{{groupInfo.name}}</span>
+              </h3>
+              <p class="groupNum">群成员<span>{{groupInfo.fact}}</span>人
+              </p>
+          </div>
+      </div>
+      <div class="groupFunBtn" style="color: #00a0ff;" ng-show="!isEditable" ng-click="toChat()">发起群聊</div>
+      <div class="groupFunBtn" style="color: #00a0ff;" ng-show="!isEditable&&groupInfo.isCreater" ng-click="toBulletin()">群公告</div>
+      <div class="groupAddUser" ng-show="isEditable" ng-click="addmember()"><a href="javascript:void 0"></a>添加新成员</div>
+      <div class="groupUserList" style="margin-bottom: 200px;">
+          <div>
+              <p class="withoutFriends hide">群组还没添加成员</p>
+              <ul class="friendsList ">
+                  <member ng-repeat="item in groupInfo.memberList" item="item" isshow="isEditable&&groupInfo.isCreater"></member>
+              </ul>
+          </div>
+      </div>
+      <div class="groupFunBtn" ng-click="quitGroup()" ng-show="!groupInfo.isCreater&&!isEditable">退出群组</div>
+      <div class="groupFunBtn" ng-click="dismiss()" ng-show="groupInfo.isCreater&&!isEditable">退出群组并解散</div>
+      <div class="groupFunBtn" ng-click="kickMember()" ng-show="groupInfo.isCreater&&isEditable">删除(<span ng-bind="groupInfo.memberList|selectedNum"></span>)</div>
+  </div>
+
+</div>
+</div>

@@ -1,0 +1,50 @@
+{
+  "name": "rongcloud-web-im-v2",
+  "version": "2.0.0",
+  "description": "RongCloud Web IM v2.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@gitlab.rongcloud.net:web-team/web-im-v2.git"
+  },
+  "keywords": [
+    "RongCloud",
+    "Web",
+    "IM"
+  ],
+  "author": [
+    "yangchuan",
+    "yuhongda",
+    "Ariel Yang <arielyang@gmail.com>"
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "coffee-script": "^1.10.0",
+    "grunt": "^0.4.5",
+    "grunt-contrib-clean": "^0.6.0",
+    "grunt-contrib-concat": "^0.5.1",
+    "grunt-contrib-connect": "^0.11.2",
+    "grunt-contrib-copy": "^0.8.1",
+    "grunt-contrib-cssmin": "^0.14.0",
+    "grunt-contrib-uglify": "^0.9.2",
+    "grunt-contrib-watch": "^0.6.1",
+    "grunt-karma": "^0.12.0",
+    "grunt-typescript": "^0.8.0",
+    "grunt-filerev": "^2.3.1",
+    "grunt-usemin": "^3.1.1",
+    "jasmine-core": "^2.3.4",
+    "karma": "^0.13.9",
+    "karma-chrome-launcher": "^0.2.0",
+    "karma-coffee-preprocessor": "^0.3.0",
+    "karma-firefox-launcher": "^0.1.6",
+    "karma-ie-launcher": "^0.2.0",
+    "karma-jasmine": "^0.3.6",
+    "karma-requirejs": "^0.2.2",
+    "karma-safari-launcher": "^0.1.1",
+    "phantomjs": "^1.9.18",
+    "requirejs": "^2.1.20"
+  }
+}

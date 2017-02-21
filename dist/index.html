@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html ng-app="webim">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport"
+          content="width=device-width,initial-scale=1.0,maximum-scale=1.0,minimum-scale=1.0,user-scalable=no"/>
+    <meta name="format-detection" content="telephone=no"/>
+    <meta name="apple-mobile-web-app-capable" content="yes"/>
+    <title>SealTalk</title>
+
+    <link rel="shortcut icon" href="assets/img/SealTalk.ico"/>
+    <link rel="stylesheet" href="assets/css/main.1007.css" charset="utf-8">
+  </head>
+  <body>
+    <div ui-view>
+
+    </div>
+
+    <script type="text/javascript">
+      if(navigator.userAgent.indexOf("MSIE 9")!=-1){
+        window.WEB_XHR_POLLING = true;
+      }
+    </script>
+
+    <script src="app.config.js"></script>
+
+    <script src="http://cdn.ronghub.com/RongIMLib-2.2.3.min.js"></script>
+    <!-- <script src="assets/js/RongIMLib.js"></script> -->
+    <script src="http://cdn.ronghub.com/RongUploadLib-2.2.2.min.js"></script>
+
+    <script src="http://cdn.ronghub.com/RongEmoji-2.2.2.min.js"></script>
+
+    <script src="http://cdn.ronghub.com/RongIMVoice-2.1.0.min.js"></script>
+
+    <script src="assets/js/jquery.min.js"></script>
+
+    <script src="assets/js/angular.min.js"></script>
+    <script src="assets/js/angular-widget.min.js"></script>
+
+    <script src="assets/js/other.min.js"></script>
+
+    <script src="assets/js/main.min.98fe.js"></script>
+
+  </body>
+</html>
