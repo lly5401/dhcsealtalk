@@ -14,59 +14,27 @@ mainCtr.controller("mainController", ["$scope", "$state", "$window", "$timeout",
         mainDataServer: mainDataServer, conversationServer: conversationServer, mainServer: mainServer, RongIMSDKServer: RongIMSDKServer, appconfig: any) {
         var isConnecting = false
         //获取链接参数的值
-        var userPhone = $state.params["userPhone"];
+        
         if (!mainDataServer.loginUser.id) {
-            //去除登录后------------
-            //conversationServer.historyMessagesCache = {};//清空历史消息
-            //mainDataServer.conversation.conversations = [];//清空会话列表
-            if (RongIMLib.RongIMClient && RongIMLib.RongIMClient.getInstance) {
-                try {
-                    RongIMSDKServer.logout();
-                    //清除之前会话列表SDK问题 TODO:SDK2.0 logout时已清除
-                    // var carr = RongIMSDKServer.conversationList();
-                    // carr.splice(0, carr.length);
-                } catch (e) {
-
-                }
+            var userid = webimutil.CookieHelper.getCookie("loginuserid"), usertoken = webimutil.CookieHelper.getCookie("loginusertoken");
+            if (userid) {
+                mainDataServer.loginUser.id = userid;
+                mainDataServer.loginUser.token = usertoken;
+            } else {
+                // $state.go("account.signin");
+                mainServer.user.logout().success(function () {
+                    webimutil.CookieHelper.removeCookie("loginuserid");
+                    mainDataServer.loginUser = new webimmodel.UserInfo();
+                    conversationServer.historyMessagesCache.length = 0;
+                    if (window.Electron) {
+                        window.Electron.webQuit();
+                    }
+                    $state.go("account.signin");
+                });
+                return;
             }
-            webimutil.CookieHelper.removeCookie("loginuserid");//清除登录状态
-            mainDataServer.loginUser = new webimmodel.UserInfo();//清除用户信
-            mainServer.user.signin(userPhone, "86", '1').success(function (rep) {
-                if (rep.code === 200) {
-                    // 登录账户
-                    mainDataServer.loginUser.id = rep.result.id;
-                    mainDataServer.loginUser.token = rep.result.token;
-                    var exdate = new Date();
-                    exdate.setDate(exdate.getDate() + 30);
-                    webimutil.CookieHelper.setCookie("loginuserid", rep.result.id, exdate.toGMTString());
-                    webimutil.CookieHelper.setCookie("loginusertoken", rep.result.token, exdate.toGMTString());
-                    //$state.go("main");
-                    //获取用户信息
-                    mainServer.user.getInfo(mainDataServer.loginUser.id).success(function (rep) {
-                        if (rep.code == 200) {
-                            mainDataServer.loginUser.nickName = rep.result.nickname
-                            mainDataServer.loginUser.firstchar = webimutil.ChineseCharacter.getPortraitChar(rep.result.nickname);
-                            mainDataServer.loginUser.portraitUri = rep.result.portraitUri
-                            angular.element(document.getElementById("loginuser")).css("background-color", webimutil.Helper.portraitColors[mainDataServer.loginUser.id.charCodeAt(0) % webimutil.Helper.portraitColors.length]);
-                        } else {
-                            console.log("get user info error")
-                        }
-                        //需要顺序执行的代码都应该放在这里
-                    }).error(function () {
-
-                    })
-                } else if (rep.code === 1000) {
-                    //用户或密码错误
-                    $scope.userorpwdIsError = true;
-                } else {
-
-                }
-            }).error(function (error, code) {
-                if (code == 400) {
-                    webimutil.Helper.alertMessage.error("无效的手机号", 2);
-                }
-            });
         }
+
         //获取用户信息
         mainServer.user.getInfo(mainDataServer.loginUser.id).success(function (rep) {
             if (rep.code == 200) {
@@ -428,8 +396,10 @@ mainCtr.controller("mainController", ["$scope", "$state", "$window", "$timeout",
                     //重新链接
                     case RongIMLib.ConnectionStatus.DISCONNECTED:
                         console.log('断开连接');
-                        if (!$state.is("account.signin")) {
-                            $state.go("account.signin");
+                        if (!$state.is("main")) {
+                            //if (!$state.is("account.signin")) {
+                            // $state.go("account.signin");
+                            $state.go("main");
                         }
                         break;
                     //其他设备登陆

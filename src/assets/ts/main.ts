@@ -41,7 +41,7 @@ webimApp.config(["$provide", "$stateProvider", "$urlRouterProvider", "$httpProvi
                 }
                 return;
             } else {
-                $state.go("main");
+                $state.go("account.signin");
                 return;
             }
         }]).when("/main/chat/:targetId/:targetType", ["$state", "$match", "mainDataServer",
@@ -100,7 +100,7 @@ webimApp.config(["$provide", "$stateProvider", "$urlRouterProvider", "$httpProvi
             url: "/forgetPassword",
             templateUrl: "assets/views/forgetPassword.html"
         }).state("main", {
-            url: '/main/:userPhone',
+            url: '/main',
             templateUrl: 'assets/views/main.html',
             controller: 'mainController'
         }).state("main.chat", {
@@ -171,8 +171,8 @@ webimApp.config(["$provide", "$stateProvider", "$urlRouterProvider", "$httpProvi
             templateUrl: 'assets/views/account.html',
             controller: ''
         }).state('account.signin', {
-            url: '/signin',
-            templateUrl: 'assets/views/signin.html',
+            url: '/signin/:userPhone',
+            //templateUrl: 'assets/views/main.html',
             controller: 'signinController'
         }).state('account.signup', {
             url: '/signup',

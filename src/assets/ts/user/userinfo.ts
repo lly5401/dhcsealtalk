@@ -44,7 +44,8 @@ userinfo.controller("userinfoController", ["$scope", "$state", "mainServer", "ma
                 if (window.Electron) {
                     window.Electron.webQuit();
                 }
-                $state.go("account.signin");
+                //$state.go("account.signin");
+                 $state.go("main");
             })
         }
 

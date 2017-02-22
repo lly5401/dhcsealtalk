@@ -5,23 +5,13 @@ var account = angular.module("webim.account", ["webim.main.server"]);
 
 
 account.controller("signinController", ["$scope", "$state", "mainServer", "mainDataServer", "conversationServer", "RongIMSDKServer",
-    function($scope: any, $state: angular.ui.IStateService, mainServer: mainServer, mainDataServer: mainDataServer, conversationServer: conversationServer, RongIMSDKServer: RongIMSDKServer) {
-        $scope.user = {
-            accountNumber: "",
-            passWord: ""
+    function ($scope: any, $state: angular.ui.IStateService, mainServer: mainServer, mainDataServer: mainDataServer, conversationServer: conversationServer, RongIMSDKServer: RongIMSDKServer) {
+        //判断参数是否为空    
+        var userPhone = $state.params["userPhone"];
+        alert(userPhone);
+        if (!userPhone) {
+            return;
         }
-
-        $scope.userorpwdIsError = false;
-
-        $scope.$watch("user.passWord", function(newVal: string, oldVal: string) {
-            if (newVal == oldVal) {
-                return;
-            }
-            else {
-                $scope.userorpwdIsError = false;
-            }
-        });
-
         conversationServer.historyMessagesCache = {};//清空历史消息
         mainDataServer.conversation.conversations = [];//清空会话列表
 
@@ -36,43 +26,34 @@ account.controller("signinController", ["$scope", "$state", "mainServer", "mainD
             }
 
         }
+        webimutil.CookieHelper.removeCookie("loginuserid");//清除登录状态
+        mainDataServer.loginUser = new webimmodel.UserInfo();//清除用户信息
+        mainServer.user.signin(userPhone, "86", '1').success(function (rep) {
+            if (rep.code === 200) {
+                // 登录账户
+                mainDataServer.loginUser.id = rep.result.id;
+                mainDataServer.loginUser.token = rep.result.token;
+                var exdate = new Date();
+                exdate.setDate(exdate.getDate() + 30);
+                webimutil.CookieHelper.setCookie("loginuserid", rep.result.id, exdate.toGMTString());
+                webimutil.CookieHelper.setCookie("loginusertoken", rep.result.token, exdate.toGMTString());
+                $state.go("main");
 
-        $scope.signin = function() {
-            alert("qqq");
-            $scope.formSignin.submitted = true;
-            webimutil.CookieHelper.removeCookie("loginuserid");//清除登录状态
-            mainDataServer.loginUser = new webimmodel.UserInfo();//清除用户信息
+            } else if (rep.code === 1000) {
+                //用户或密码错误
+                $scope.userorpwdIsError = true;
+            } else {
 
-            if ($scope.formSignin.$valid) {
-                mainServer.user.signin($scope.user.accountNumber, "86", $scope.user.passWord).success(function(rep) {
-                    if (rep.code === 200) {
-                        // 登录账户
-                        mainDataServer.loginUser.id = rep.result.id;
-                        mainDataServer.loginUser.token = rep.result.token;
-                        var exdate = new Date();
-　　　　                 exdate.setDate(exdate.getDate() + 30);
-                        webimutil.CookieHelper.setCookie("loginuserid", rep.result.id, exdate.toGMTString());
-                        webimutil.CookieHelper.setCookie("loginusertoken", rep.result.token, exdate.toGMTString());
-                        $state.go("main");
-
-                    } else if (rep.code === 1000) {
-                        //用户或密码错误
-                        $scope.userorpwdIsError = true;
-                    } else {
-
-                    }
-                }).error(function(error, code) {
-                    if (code == 400) {
-                        webimutil.Helper.alertMessage.error("无效的手机号", 2);
-                    }
-                });
             }
-        }
-
+        }).error(function (error, code) {
+            if (code == 400) {
+                webimutil.Helper.alertMessage.error("无效的手机号", 2);
+            }
+        });
     }])
 
 account.controller("signupController", ["$scope", "$interval", "$state", "mainServer",
-    function($scope: any, $interval: angular.IIntervalService, $state: angular.ui.IStateService, mainServer: mainServer) {
+    function ($scope: any, $interval: angular.IIntervalService, $state: angular.ui.IStateService, mainServer: mainServer) {
 
         $scope.user = {
             // accountNumber: "",
@@ -82,20 +63,20 @@ account.controller("signupController", ["$scope", "$interval", "$state", "mainSe
             passWord: ""
         }
 
-        $scope.$watch("user.code", function() {
+        $scope.$watch("user.code", function () {
             $scope.codeIsError = false;
         });
 
-        $scope.signup = function() {
+        $scope.signup = function () {
             $scope.formSignup.submitted = true;
             if ($scope.formSignup.$valid) {
-                mainServer.user.verifyCode($scope.user.phone, "86", $scope.user.code).success(function(data) {
+                mainServer.user.verifyCode($scope.user.phone, "86", $scope.user.code).success(function (data) {
                     if (data.code == 200 && data.result.verification_token) {
                         mainServer.user.signup($scope.user.nickname, $scope.user.passWord, data.result.verification_token).
-                            success(function(e) {
+                            success(function (e) {
                                 webimutil.Helper.alertMessage.success("注册成功", 2);
                                 $state.go("account.signin");
-                            }).error(function(e) {
+                            }).error(function (e) {
                                 webimutil.Helper.alertMessage.error("注册失败", 2);
                             })
                     } else {
@@ -103,7 +84,7 @@ account.controller("signupController", ["$scope", "$interval", "$state", "mainSe
                         $scope.codeIsError = true;
                     }
 
-                }).error(function(error, code) {
+                }).error(function (error, code) {
                     if (code == 403) {
                         webimutil.Helper.alertMessage.error("手机号已被注册过", 2);
                     } else if (code == 404) {
@@ -119,7 +100,7 @@ account.controller("signupController", ["$scope", "$interval", "$state", "mainSe
     }])
 
 account.controller("forgotpasswordController", ["$scope", "$state", "mainServer",
-    function($scope: any, $state: angular.ui.IStateService, mainServer: mainServer) {
+    function ($scope: any, $state: angular.ui.IStateService, mainServer: mainServer) {
         $scope.user = {
             phone: "",
             code: ""
@@ -127,21 +108,21 @@ account.controller("forgotpasswordController", ["$scope", "$state", "mainServer"
 
         $scope.codeIsError = false;
 
-        $scope.$watch("user.code", function() {
+        $scope.$watch("user.code", function () {
             $scope.codeIsError = false;
         })
 
-        $scope.nextfun = function() {
+        $scope.nextfun = function () {
             $scope.formFogot.submitted = true;
             if ($scope.formFogot.$valid) {
-                mainServer.user.verifyCode($scope.user.phone, "86", $scope.user.code).success(function(res) {
+                mainServer.user.verifyCode($scope.user.phone, "86", $scope.user.code).success(function (res) {
                     if (res.code == 200 && res.result.verification_token) {
                         $state.go("account.resetpassword", { token: res.result.verification_token });
                     } else {
                         //短信验证码错误
                         $scope.codeIsError = true;
                     }
-                }).error(function(e) {
+                }).error(function (e) {
 
                 })
             }
@@ -149,7 +130,7 @@ account.controller("forgotpasswordController", ["$scope", "$state", "mainServer"
     }])
 
 account.controller("resetpasswordController", ["$scope", "$state", "$stateParams", "mainServer",
-    function($scope: any, $state: angular.ui.IStateService, $stateParams: angular.ui.IStateParamsService, mainServer: mainServer) {
+    function ($scope: any, $state: angular.ui.IStateService, $stateParams: angular.ui.IStateParamsService, mainServer: mainServer) {
 
         var token = $stateParams["token"];
         $scope.user = {
@@ -157,17 +138,17 @@ account.controller("resetpasswordController", ["$scope", "$state", "$stateParams
             repassword: ""
         }
 
-        $scope.submit = function() {
+        $scope.submit = function () {
             $scope.formResetPwd.submitted = true;
             if ($scope.formResetPwd.$valid) {
-                mainServer.user.resetPassword($scope.user.newpassword, token).success(function(req) {
+                mainServer.user.resetPassword($scope.user.newpassword, token).success(function (req) {
                     if (req.code == 200) {
                         $state.go("account.signin");
                         webimutil.Helper.alertMessage.success("重置成功", 2);
                     } else {
                         webimutil.Helper.alertMessage.error("重置失败", 2);
                     }
-                }).error(function(error, code) {
+                }).error(function (error, code) {
                     if (code == 400) {
                         webimutil.Helper.alertMessage.error("重置失败", 2);
                     } else if (code == 404) {
@@ -180,14 +161,14 @@ account.controller("resetpasswordController", ["$scope", "$state", "$stateParams
     }]);
 
 account.directive("usernameAvailable", ["$http", "$q", "mainServer",
-    function($http: angular.IHttpService, $q: angular.IQService, mainServer: mainServer) {
+    function ($http: angular.IHttpService, $q: angular.IQService, mainServer: mainServer) {
         return {
             require: "ngModel",
-            link: function(scope: any, ele: angular.IRootElementService, attr: any, ngModel: angular.INgModelController) {
+            link: function (scope: any, ele: angular.IRootElementService, attr: any, ngModel: angular.INgModelController) {
                 if (ngModel) {
                     var usernameRegexp = /^[a-z0-9A-Z_]{4,64}$/;
                 }
-                var customValidator = function(value: string) {
+                var customValidator = function (value: string) {
                     var validity = ngModel.$isEmpty(value) || usernameRegexp.test(value);
                     ngModel.$setValidity("userformat", validity);
                     return validity ? value : undefined;
@@ -195,7 +176,7 @@ account.directive("usernameAvailable", ["$http", "$q", "mainServer",
                 ngModel.$formatters.push(customValidator);
                 ngModel.$parsers.push(customValidator);
 
-                ngModel.$asyncValidators['uniqueUsername'] = function(modelValue: any, viewValue: any) {
+                ngModel.$asyncValidators['uniqueUsername'] = function (modelValue: any, viewValue: any) {
                     var value = modelValue || viewValue;
                     return mainServer.user.checkUsernameAvailable(value).then(function resolved(res) {
                         if (res.data && res.data.result) {
@@ -213,14 +194,14 @@ account.directive("usernameAvailable", ["$http", "$q", "mainServer",
     }]);
 
 account.directive("phoneAvailable", ["$http", "$q", "mainServer",
-    function($http: angular.IHttpService, $q: angular.IQService, mainServer: mainServer) {
+    function ($http: angular.IHttpService, $q: angular.IQService, mainServer: mainServer) {
         return {
             require: "ngModel",
-            link: function(scope: any, ele: angular.IRootElementService, attr: any, ngModel: angular.INgModelController) {
+            link: function (scope: any, ele: angular.IRootElementService, attr: any, ngModel: angular.INgModelController) {
                 if (ngModel) {
                     var phoneRegexp = /^1[3-9][0-9]{9,9}$/;
                 }
-                var customValidator = function(value: string) {
+                var customValidator = function (value: string) {
                     var validity = ngModel.$isEmpty(value) || phoneRegexp.test(value);
                     ngModel.$setValidity("phoneformat", validity);
                     return validity ? value : undefined;
@@ -228,7 +209,7 @@ account.directive("phoneAvailable", ["$http", "$q", "mainServer",
                 ngModel.$formatters.push(customValidator);
                 ngModel.$parsers.push(customValidator);
 
-                ngModel.$asyncValidators['uniquephone'] = function(modelValue: any, viewValue: any) {
+                ngModel.$asyncValidators['uniquephone'] = function (modelValue: any, viewValue: any) {
                     var value = modelValue || viewValue;
                     return mainServer.user.checkPhoneAvailable(value, "86").then(function resolved(res) {
                         if (res.data && res.data.result) {
@@ -246,14 +227,14 @@ account.directive("phoneAvailable", ["$http", "$q", "mainServer",
     }]);
 
 account.directive("phoneRegistered", ["$http", "$q", "mainServer",
-    function($http: angular.IHttpService, $q: angular.IQService, mainServer: mainServer) {
+    function ($http: angular.IHttpService, $q: angular.IQService, mainServer: mainServer) {
         return {
             require: "ngModel",
-            link: function(scope: any, ele: angular.IRootElementService, attr: any, ngModel: angular.INgModelController) {
+            link: function (scope: any, ele: angular.IRootElementService, attr: any, ngModel: angular.INgModelController) {
                 if (ngModel) {
                     var phoneRegexp = /^1[3-9][0-9]{9,9}$/;
                 }
-                var customValidator = function(value: string) {
+                var customValidator = function (value: string) {
                     var validity = ngModel.$isEmpty(value) || phoneRegexp.test(value);
                     ngModel.$setValidity("phoneformat", validity);
                     return validity ? value : undefined;
@@ -261,7 +242,7 @@ account.directive("phoneRegistered", ["$http", "$q", "mainServer",
                 ngModel.$formatters.push(customValidator);
                 ngModel.$parsers.push(customValidator);
 
-                ngModel.$asyncValidators['uniquephone'] = function(modelValue: any, viewValue: any) {
+                ngModel.$asyncValidators['uniquephone'] = function (modelValue: any, viewValue: any) {
                     var value = modelValue || viewValue;
                     return mainServer.user.checkPhoneAvailable(value, "86").then(function resolved(res) {
                         if (res.data && res.data.result) {
@@ -278,7 +259,7 @@ account.directive("phoneRegistered", ["$http", "$q", "mainServer",
         }
     }])
 
-account.directive("sendCodeButton", ["$interval", "mainServer", function($interval: angular.IIntervalService, mainServer: mainServer) {
+account.directive("sendCodeButton", ["$interval", "mainServer", function ($interval: angular.IIntervalService, mainServer: mainServer) {
     return {
         restrict: "E",
         scope: {
@@ -293,18 +274,18 @@ account.directive("sendCodeButton", ["$interval", "mainServer", function($interv
         '</span>' +
         // '<span class="sec" ng-show="codeTime==0">{{startTime}} s</span>' +
         '<span class="sec" ng-show="codeTime>0">{{codeTime}} s</span>',
-        link: function(scope: any, ele: angular.IRootElementService, attr: any) {
+        link: function (scope: any, ele: angular.IRootElementService, attr: any) {
             scope.codeTime = 0;
             scope.startTime = scope.startTime || 60;
             scope.region = scope.region || "86";
 
-            scope.sendCode = function() {
+            scope.sendCode = function () {
                 if (scope.codeTime == 0 && scope.available) {
-                    mainServer.user.sendCode(scope.phone, "86").success(function(rep) {
+                    mainServer.user.sendCode(scope.phone, "86").success(function (rep) {
                         if (rep.code == 200) {
                             scope.loading = true;
                             scope.codeTime = scope.startTime;
-                            scope.interval = $interval(function() {
+                            scope.interval = $interval(function () {
                                 if (scope.codeTime > 0) {
                                     scope.codeTime = scope.codeTime - 1;
                                 } else {
@@ -315,7 +296,7 @@ account.directive("sendCodeButton", ["$interval", "mainServer", function($interv
                         } else if (rep.code == 5000) {
                             webimutil.Helper.alertMessage.error("发送频率过快，请稍后再发", 2);
                         }
-                    }).error(function(error, code) {
+                    }).error(function (error, code) {
                         if (code == 400) {
                             webimutil.Helper.alertMessage.error("无效手机号", 2);
                         }
