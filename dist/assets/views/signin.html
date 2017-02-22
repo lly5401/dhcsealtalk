@@ -15,7 +15,7 @@
                         <p class="error-block" ng-show="(formSignin.accountNumber.$dirty||formSignin.submitted)&&formSignin.accountNumber.$invalid&&!formSignin.accountNumber.$focused">手机号格式错误</p>
                     </div>
                     <div class="form-group">
-                        <input type="password" placeholder="密码" required ng-pattern='/^[0-9a-zA-Z!@#$%^&*(){}:"|>?\[\];,./\-=_+]{6,16}$/' class="form-control-my" name="passWord" ng-model="user.passWord"  id="pwdIn" my-focus>
+                        <input type="password" placeholder="密码"  class="form-control-my" name="passWord" ng-model="user.passWord"  id="pwdIn" my-focus>
                         <p class="error-block" ng-show="(formSignin.passWord.$dirty||formSignin.submitted)&&formSignin.passWord.$invalid&&!formSignin.passWord.$focused">密码格式错误</p>
                         <p class="error-block" ng-show="!formSignin.passWord.$invalid&&userorpwdIsError&&!formSignin.passWord.$focused">手机号或密码错误</p>
                     </div>

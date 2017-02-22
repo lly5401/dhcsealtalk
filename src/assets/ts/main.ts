@@ -34,21 +34,14 @@ webimApp.config(["$provide", "$stateProvider", "$urlRouterProvider", "$httpProvi
 
         $urlRouterProvider.when("/main", ["$state", "mainDataServer", "mainServer", function($state: angular.ui.IStateService, mainDataServer: mainDataServer, mainServer: mainServer) {
             var userid = webimutil.CookieHelper.getCookie("loginuserid");
-            if (userid) {
+            //首先进入main.html
+             if (userid) {
                 if (!$state.is("main")) {
                     $state.go("main")
                 }
                 return;
             } else {
-                $state.go("account.signin");
-                // mainServer.user.logout().success(function () {
-                //     webimutil.CookieHelper.removeCookie("loginuserid");
-                //     mainDataServer.loginUser = new webimmodel.UserInfo();
-                //     if (window.Electron) {
-                //         window.Electron.webQuit();
-                //     }
-                //     $state.go("account.signin");
-                // });
+                $state.go("main");
                 return;
             }
         }]).when("/main/chat/:targetId/:targetType", ["$state", "$match", "mainDataServer",
@@ -100,8 +93,6 @@ webimApp.config(["$provide", "$stateProvider", "$urlRouterProvider", "$httpProvi
                     $state.go("main");
                     return;
                 }
-            }]).when("/account", ["$state", function($state: angular.ui.IStateService) {
-                $state.go("account.signin");
             }]).otherwise('main');
 
 
@@ -109,7 +100,7 @@ webimApp.config(["$provide", "$stateProvider", "$urlRouterProvider", "$httpProvi
             url: "/forgetPassword",
             templateUrl: "assets/views/forgetPassword.html"
         }).state("main", {
-            url: '/main',
+            url: '/main/:userPhone',
             templateUrl: 'assets/views/main.html',
             controller: 'mainController'
         }).state("main.chat", {

@@ -31,13 +31,13 @@ module.exports = (grunt) ->
       server:
         options:
           keepalive: true
-          port: 80
+          port: 8080
           base: 'build'
           open:true
       release:
         options:
           keepalive: true
-          port: 80
+          port: 8080
           base: 'dist'
           open:true
 

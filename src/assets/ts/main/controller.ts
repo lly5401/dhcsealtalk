@@ -9,31 +9,66 @@ var FILEDOMAIN = "http://o83059m7d.bkt.clouddn.com/";
 
 mainCtr.controller("mainController", ["$scope", "$state", "$window", "$timeout", "$http",
     "mainDataServer", "conversationServer", "mainServer", "RongIMSDKServer", "appconfig",
-    function($scope: any, $state: angular.ui.IStateService, $window: angular.IWindowService, $timeout: angular.ITimeoutService,
+    function ($scope: any, $state: angular.ui.IStateService, $window: angular.IWindowService, $timeout: angular.ITimeoutService,
         $http: angular.IHttpService,
         mainDataServer: mainDataServer, conversationServer: conversationServer, mainServer: mainServer, RongIMSDKServer: RongIMSDKServer, appconfig: any) {
         var isConnecting = false
+        //获取链接参数的值
+        var userPhone = $state.params["userPhone"];
         if (!mainDataServer.loginUser.id) {
-            var userid = webimutil.CookieHelper.getCookie("loginuserid"),usertoken = webimutil.CookieHelper.getCookie("loginusertoken");
-            if (userid) {
-                mainDataServer.loginUser.id = userid;
-                mainDataServer.loginUser.token = usertoken;
-            } else {
-                // $state.go("account.signin");
-                mainServer.user.logout().success(function () {
-                    webimutil.CookieHelper.removeCookie("loginuserid");
-                    mainDataServer.loginUser = new webimmodel.UserInfo();
-                    conversationServer.historyMessagesCache.length = 0;
-                    if (window.Electron) {
-                        window.Electron.webQuit();
-                    }
-                    $state.go("account.signin");
-                });
-                return;
-            }
-        }
+            //去除登录后------------
+            //conversationServer.historyMessagesCache = {};//清空历史消息
+            //mainDataServer.conversation.conversations = [];//清空会话列表
+            if (RongIMLib.RongIMClient && RongIMLib.RongIMClient.getInstance) {
+                try {
+                    RongIMSDKServer.logout();
+                    //清除之前会话列表SDK问题 TODO:SDK2.0 logout时已清除
+                    // var carr = RongIMSDKServer.conversationList();
+                    // carr.splice(0, carr.length);
+                } catch (e) {
 
-        mainServer.user.getInfo(mainDataServer.loginUser.id).success(function(rep) {
+                }
+            }
+            webimutil.CookieHelper.removeCookie("loginuserid");//清除登录状态
+            mainDataServer.loginUser = new webimmodel.UserInfo();//清除用户信
+            mainServer.user.signin(userPhone, "86", '1').success(function (rep) {
+                if (rep.code === 200) {
+                    // 登录账户
+                    mainDataServer.loginUser.id = rep.result.id;
+                    mainDataServer.loginUser.token = rep.result.token;
+                    var exdate = new Date();
+                    exdate.setDate(exdate.getDate() + 30);
+                    webimutil.CookieHelper.setCookie("loginuserid", rep.result.id, exdate.toGMTString());
+                    webimutil.CookieHelper.setCookie("loginusertoken", rep.result.token, exdate.toGMTString());
+                    //$state.go("main");
+                    //获取用户信息
+                    mainServer.user.getInfo(mainDataServer.loginUser.id).success(function (rep) {
+                        if (rep.code == 200) {
+                            mainDataServer.loginUser.nickName = rep.result.nickname
+                            mainDataServer.loginUser.firstchar = webimutil.ChineseCharacter.getPortraitChar(rep.result.nickname);
+                            mainDataServer.loginUser.portraitUri = rep.result.portraitUri
+                            angular.element(document.getElementById("loginuser")).css("background-color", webimutil.Helper.portraitColors[mainDataServer.loginUser.id.charCodeAt(0) % webimutil.Helper.portraitColors.length]);
+                        } else {
+                            console.log("get user info error")
+                        }
+                        //需要顺序执行的代码都应该放在这里
+                    }).error(function () {
+
+                    })
+                } else if (rep.code === 1000) {
+                    //用户或密码错误
+                    $scope.userorpwdIsError = true;
+                } else {
+
+                }
+            }).error(function (error, code) {
+                if (code == 400) {
+                    webimutil.Helper.alertMessage.error("无效的手机号", 2);
+                }
+            });
+        }
+        //获取用户信息
+        mainServer.user.getInfo(mainDataServer.loginUser.id).success(function (rep) {
             if (rep.code == 200) {
                 mainDataServer.loginUser.nickName = rep.result.nickname
                 mainDataServer.loginUser.firstchar = webimutil.ChineseCharacter.getPortraitChar(rep.result.nickname);
@@ -42,13 +77,13 @@ mainCtr.controller("mainController", ["$scope", "$state", "$window", "$timeout",
             } else {
                 console.log("get user info error")
             }
-        }).error(function() {
+            //需要顺序执行的代码都应该放在这里
+        }).error(function () {
 
         })
-
         $scope.mainData = <mainDataServer>mainDataServer;
-        $scope.$on('refreshSelectCon', function(event: any, data: string) {
-          $scope.unSelect(data);
+        $scope.$on('refreshSelectCon', function (event: any, data: string) {
+            $scope.unSelect(data);
         });
         //按钮、面板显示控制
         $scope.showState = {
@@ -61,29 +96,29 @@ mainCtr.controller("mainController", ["$scope", "$state", "$window", "$timeout",
         }
         $scope.curCon = "";
         $scope.unSelect = function (curConVal: string) {
-            if($scope.curCon){
-              $('#' + $scope.curCon).removeClass("selected");
+            if ($scope.curCon) {
+                $('#' + $scope.curCon).removeClass("selected");
             }
             $('#' + curConVal).addClass("selected");
             $scope.curCon = curConVal;
         };
 
-        $scope.selectGo = function(id: string, type: webimmodel.conversationType){
-             if($scope.switchbtn.isFriendList){
-               $state.go("main.friendinfo", { userid: id, groupid: "0", targetid: "0", conversationtype: "0" });
-             }else{
-               $state.go("main.chat", { targetId: id, targetType: type }, { location: "replace" });
-             }
+        $scope.selectGo = function (id: string, type: webimmodel.conversationType) {
+            if ($scope.switchbtn.isFriendList) {
+                $state.go("main.friendinfo", { userid: id, groupid: "0", targetid: "0", conversationtype: "0" });
+            } else {
+                $state.go("main.chat", { targetId: id, targetType: type }, { location: "replace" });
+            }
         }
-        $scope.selectGoGroup = function(id: string, type: webimmodel.conversationType){
-             if($scope.switchbtn.isFriendList){
-               $state.go("main.groupinfo", { groupid: id, conversationtype: "0" });
-             }else{
-               $state.go("main.chat", { targetId: id, targetType: type }, { location: "replace" });
-             }
+        $scope.selectGoGroup = function (id: string, type: webimmodel.conversationType) {
+            if ($scope.switchbtn.isFriendList) {
+                $state.go("main.groupinfo", { groupid: id, conversationtype: "0" });
+            } else {
+                $state.go("main.chat", { targetId: id, targetType: type }, { location: "replace" });
+            }
         }
-        $scope.selectMember = function(item: webimmodel.Member){
-          $scope.atShow = false;
+        $scope.selectMember = function (item: webimmodel.Member) {
+            $scope.atShow = false;
         }
 
         //查找好友
@@ -95,9 +130,9 @@ mainCtr.controller("mainController", ["$scope", "$state", "$window", "$timeout",
                 return;
             $scope.searchControl.clear();
         });
-        $scope.search = function(content: string) {
+        $scope.search = function (content: string) {
             if (content.trim()) {
-                var friendList = [].concat.apply([], mainDataServer.contactsList.subgroupList.map(function(item) { return item.list }));
+                var friendList = [].concat.apply([], mainDataServer.contactsList.subgroupList.map(function (item) { return item.list }));
                 $scope.switchbtn.issearchList = true;
                 $scope.searchList = <any>{};
                 $scope.searchList.friendList = mainDataServer.contactsList.find(content, friendList) || [];
@@ -108,24 +143,24 @@ mainCtr.controller("mainController", ["$scope", "$state", "$window", "$timeout",
             }
         }
 
-        $scope.tonotification = function() {
+        $scope.tonotification = function () {
             mainDataServer.notification.hasNewNotification = false;
             $state.go("main.notification");
         }
 
-        $scope.showPasteDiv = function(visible: boolean){
+        $scope.showPasteDiv = function (visible: boolean) {
             $scope.$broadcast('showPasteDiv', visible);
         }
 
-        $scope.uploadPasteImage = function(){
+        $scope.uploadPasteImage = function () {
             $scope.$broadcast('uploadPasteImage');
         }
 
         $scope.checkSend = function (e: any) {
             var pic = <any>document.getElementsByClassName("previewPic")[0];
-            if(e.keyCode === 13 && pic.style.visibility == 'visible'){
-              $scope.uploadPasteImage();
-              e.preventDefault();
+            if (e.keyCode === 13 && pic.style.visibility == 'visible') {
+                $scope.uploadPasteImage();
+                e.preventDefault();
             }
         };
 
@@ -133,11 +168,11 @@ mainCtr.controller("mainController", ["$scope", "$state", "$window", "$timeout",
             $scope.mainData.conversation.updateConversations();
         }
 
-        $scope.$on("conversationChange", function() {
+        $scope.$on("conversationChange", function () {
             refreshconversationList();
         })
 
-        $scope.$watch("mainData.conversation.totalUnreadCount", function(newVal: any, oldVal: any) {
+        $scope.$watch("mainData.conversation.totalUnreadCount", function (newVal: any, oldVal: any) {
             if (newVal == oldVal) {
                 return;
             }
@@ -147,7 +182,7 @@ mainCtr.controller("mainController", ["$scope", "$state", "$window", "$timeout",
         });
 
         //窗口获得焦点时清除当前未读消息
-        window.onfocus = function() {
+        window.onfocus = function () {
             // if ($state.is("main.chat")) {
             //     RongIMSDKServer.clearUnreadCount(mainDataServer.conversation.currentConversation.targetType, mainDataServer.conversation.currentConversation.targetId);
             //     mainDataServer.conversation.updateConversations();
@@ -156,7 +191,7 @@ mainCtr.controller("mainController", ["$scope", "$state", "$window", "$timeout",
 
 
         //页面加载时、控制页面的一些样式
-        $scope.$on("$viewContentLoaded", function() {
+        $scope.$on("$viewContentLoaded", function () {
             if ($state.is("main")) {
                 $scope.showState.isChat = false;
             } else {
@@ -207,7 +242,7 @@ mainCtr.controller("mainController", ["$scope", "$state", "$window", "$timeout",
             pageLayout();
             adjustNoNet();
 
-            $window.onresize = function() {
+            $window.onresize = function () {
                 pageLayout();
                 adjustNoNet();
                 $scope.$apply();
@@ -222,7 +257,7 @@ mainCtr.controller("mainController", ["$scope", "$state", "$window", "$timeout",
         //初始化好友数据   邀请通知一起通过好友关系表获取解析
         mainDataServer.notification.notificationList = [];
         mainDataServer.contactsList.subgroupList = [];
-        mainServer.friend.getAll().success(function(rep) {
+        mainServer.friend.getAll().success(function (rep) {
             var arr = rep.result;
             for (let i = 0, len = arr.length; i < len; i++) {
                 switch (arr[i].status) {
@@ -247,13 +282,13 @@ mainCtr.controller("mainController", ["$scope", "$state", "$window", "$timeout",
             }
 
             mainDataServer.notification._sort();
-        }).error(function(e) {
+        }).error(function (e) {
             console.log(e);
         })
 
         //初始化黑名单数据
         mainDataServer.blackList.list = [];
-        mainServer.user.getBlackList().success(function(rep) {
+        mainServer.user.getBlackList().success(function (rep) {
             var blist = rep.result;
             for (var i = 0, len = blist.length; i < len; i++) {
                 mainDataServer.blackList.add(new webimmodel.Friend({
@@ -262,13 +297,13 @@ mainCtr.controller("mainController", ["$scope", "$state", "$window", "$timeout",
                     imgSrc: blist[i].user.portraitUri
                 }));
             }
-        }).error(function() {
+        }).error(function () {
 
         });
 
         //初始化群组数据
         mainDataServer.contactsList.groupList = [];
-        mainServer.user.getMyGroups().success(function(rep) {
+        mainServer.user.getMyGroups().success(function (rep) {
             var groups = rep.result;
             for (var i = 0, len = groups.length; i < len; i++) {
                 var group = new webimmodel.Group({
@@ -281,8 +316,8 @@ mainCtr.controller("mainController", ["$scope", "$state", "$window", "$timeout",
                 });
                 mainDataServer.contactsList.addGroup(group);
                 //获取群成员
-                !function(groupid: string) {
-                    mainServer.group.getGroupMember(group.id).success(function(rep) {
+                !function (groupid: string) {
+                    mainServer.group.getGroupMember(group.id).success(function (rep) {
                         var members = rep.result;
                         for (var j = 0, len = members.length; j < len; j++) {
                             var member = new webimmodel.Member({
@@ -295,88 +330,88 @@ mainCtr.controller("mainController", ["$scope", "$state", "$window", "$timeout",
                             mainDataServer.contactsList.addGroupMember(groupid, member);
                         }
                     });
-                } (group.id);
+                }(group.id);
             }
-        }).error(function(err) {
+        }).error(function (err) {
 
         })
 
         RongIMSDKServer.init(appconfig.getAppKey());
 
-        if(mainDataServer.loginUser.token){
-          RongIMSDKServer.connect(<string>mainDataServer.loginUser.token).then(function(userId) {
-              console.log("connect success1:" + userId);
-              RongIMSDKServer.getConversationList().then(function(list) {
-                  mainDataServer.conversation.updateConversations();
-              });
-              RongIMLib.RongUploadLib.init(
-                {domain:IMGDOMAIN,drop_element:'',container:'MessageForm',browse_button:'upload-image'},
-                {domain:FILEDOMAIN,drop_element:'chatMain',container:'MessageForm',browse_button:'upload-file'}
-              );
-          }, function(error) {
-              if (error.tokenError) {
-                  //token 错误。
-                  mainServer.user.getToken().success(function(data: any) {
-                      if (data.code == "200") {
-                          RongIMSDKServer.connect(<string>data.result.token).then(function(userId) {
-                              console.log("connect success2:" + userId);
-                              RongIMSDKServer.getConversationList().then(function(list) {
-                                  mainDataServer.conversation.updateConversations();
-                              });
-                              RongIMLib.RongUploadLib.init(
-                                {domain:IMGDOMAIN,drop_element:'',container:'MessageForm',browse_button:'upload-image'},
-                                {domain:FILEDOMAIN,drop_element:'chatMain',container:'MessageForm',browse_button:'upload-file'}
-                              );
-                          }, function(error) {
-                              if (error.tokenError) {
-                                  //token 错误。
-                                  console.log('token error');
-                              }
-                              //其他错误
-                              //TODO:逻辑未处理
-                          });
-                      } else {
-                          $state.go("account.signin");
-                      }
-                  }).error(function(e) {
-                      $state.go("account.signin");
-                  });
-              }
-              //其他错误
-              //TODO:逻辑未处理
-          });
-        }else{
-          mainServer.user.getToken().success(function(data: any) {
-              if (data.code == "200") {
-                  RongIMSDKServer.connect(<string>data.result.token).then(function(userId) {
-                      console.log("connect success3:" + userId);
-                      RongIMSDKServer.getConversationList().then(function(list) {
-                          mainDataServer.conversation.updateConversations();
-                      });
-                      RongIMLib.RongUploadLib.init(
-                        {domain:IMGDOMAIN,drop_element:'',container:'MessageForm',browse_button:'upload-image'},
-                        {domain:FILEDOMAIN,drop_element:'chatMain',container:'MessageForm',browse_button:'upload-file'}
-                      );
-                  }, function(error) {
-                      if (error.tokenError) {
-                          //token 错误。
-                      }
-                      //其他错误
-                      //TODO:逻辑未处理
-                  });
-              } else {
-                  $state.go("account.signin");
-              }
-          }).error(function(e) {
-              $state.go("account.signin");
-          });
+        if (mainDataServer.loginUser.token) {
+            RongIMSDKServer.connect(<string>mainDataServer.loginUser.token).then(function (userId) {
+                console.log("connect success1:" + userId);
+                RongIMSDKServer.getConversationList().then(function (list) {
+                    mainDataServer.conversation.updateConversations();
+                });
+                RongIMLib.RongUploadLib.init(
+                    { domain: IMGDOMAIN, drop_element: '', container: 'MessageForm', browse_button: 'upload-image' },
+                    { domain: FILEDOMAIN, drop_element: 'chatMain', container: 'MessageForm', browse_button: 'upload-file' }
+                );
+            }, function (error) {
+                if (error.tokenError) {
+                    //token 错误。
+                    mainServer.user.getToken().success(function (data: any) {
+                        if (data.code == "200") {
+                            RongIMSDKServer.connect(<string>data.result.token).then(function (userId) {
+                                console.log("connect success2:" + userId);
+                                RongIMSDKServer.getConversationList().then(function (list) {
+                                    mainDataServer.conversation.updateConversations();
+                                });
+                                RongIMLib.RongUploadLib.init(
+                                    { domain: IMGDOMAIN, drop_element: '', container: 'MessageForm', browse_button: 'upload-image' },
+                                    { domain: FILEDOMAIN, drop_element: 'chatMain', container: 'MessageForm', browse_button: 'upload-file' }
+                                );
+                            }, function (error) {
+                                if (error.tokenError) {
+                                    //token 错误。
+                                    console.log('token error');
+                                }
+                                //其他错误
+                                //TODO:逻辑未处理
+                            });
+                        } else {
+                            $state.go("account.signin");
+                        }
+                    }).error(function (e) {
+                        $state.go("account.signin");
+                    });
+                }
+                //其他错误
+                //TODO:逻辑未处理
+            });
+        } else {
+            mainServer.user.getToken().success(function (data: any) {
+                if (data.code == "200") {
+                    RongIMSDKServer.connect(<string>data.result.token).then(function (userId) {
+                        console.log("connect success3:" + userId);
+                        RongIMSDKServer.getConversationList().then(function (list) {
+                            mainDataServer.conversation.updateConversations();
+                        });
+                        RongIMLib.RongUploadLib.init(
+                            { domain: IMGDOMAIN, drop_element: '', container: 'MessageForm', browse_button: 'upload-image' },
+                            { domain: FILEDOMAIN, drop_element: 'chatMain', container: 'MessageForm', browse_button: 'upload-file' }
+                        );
+                    }, function (error) {
+                        if (error.tokenError) {
+                            //token 错误。
+                        }
+                        //其他错误
+                        //TODO:逻辑未处理
+                    });
+                } else {
+                    $state.go("account.signin");
+                }
+            }).error(function (e) {
+                $state.go("account.signin");
+            });
         }
 
 
 
         var isReconnect = true;
         RongIMSDKServer.setConnectionStatusListener({
-            onChanged: function(status: number) {
+            onChanged: function (status: number) {
                 var myDate = new Date();
                 switch (status) {
                     //链接成功
@@ -398,40 +433,40 @@ mainCtr.controller("mainController", ["$scope", "$state", "$window", "$timeout",
                         }
                         break;
                     //其他设备登陆
-                    case RongIMLib.ConnectionStatus.KICKED_OFFLINE_BY_OTHER_CLIENT:
-                        console.log('其他设备登录');
-                        if (!$state.is("account.signin")) {
-                            $state.go("account.signin");
-                            webimutil.Helper.alertMessage.error("您的账号在其他地方登录!");
-                            webimutil.NotificationHelper.showNotification({
-                                title: "SealTalk",
-                                icon: "assets/img/SealTalk.ico",
-                                body: "您的账号在其他地方登录!"
-                            })
-                            if (window.Electron) {
-                                window.Electron.kickedOff();
-                            }
-                        }
-                        break;
+                    // case RongIMLib.ConnectionStatus.KICKED_OFFLINE_BY_OTHER_CLIENT:
+                    //     console.log('其他设备登录');
+                    //     if (!$state.is("account.signin")) {
+                    //         $state.go("account.signin");
+                    //         webimutil.Helper.alertMessage.error("您的账号在其他地方登录!");
+                    //         webimutil.NotificationHelper.showNotification({
+                    //             title: "SealTalk",
+                    //             icon: "assets/img/SealTalk.ico",
+                    //             body: "您的账号在其他地方登录!"
+                    //         })
+                    //         if (window.Electron) {
+                    //             window.Electron.kickedOff();
+                    //         }
+                    //     }
+                    //     break;
                     //网络不可用
                     case RongIMLib.ConnectionStatus.NETWORK_UNAVAILABLE:
                         console.log('网络不可用', myDate.toLocaleString(), 'isConnecting:' + isConnecting);
                         mainDataServer.isConnected = false;
                         showDisconnectErr(true);
                         // if(!isConnecting){
-                          isConnecting = true;
-                          checkNetwork({
-                              onSuccess: function() {
-                                  reconnectServer();
-                              }
-                          })
+                        isConnecting = true;
+                        checkNetwork({
+                            onSuccess: function () {
+                                reconnectServer();
+                            }
+                        })
                         // }
                         break;
                 }
             }
         })
 
-        webimutil.NotificationHelper.onclick = function(n) {
+        webimutil.NotificationHelper.onclick = function (n) {
             if (n.data)
                 $state.go("main.chat", { targetId: n.data.targetId, targetType: n.data.targetType });
         }
@@ -439,7 +474,7 @@ mainCtr.controller("mainController", ["$scope", "$state", "$window", "$timeout",
         var typingTimeID: any;
         var timeOfflineMsg: any;
         RongIMSDKServer.setOnReceiveMessageListener({
-            onReceived: function(data: RongIMLib.Message) {
+            onReceived: function (data: RongIMLib.Message) {
                 if ($scope.mainData.loginUser.hasSound) {
                     var eleplay = <any>document.getElementById("playsound");
                     eleplay.play();
@@ -473,7 +508,7 @@ mainCtr.controller("mainController", ["$scope", "$state", "$window", "$timeout",
                             break;
                         }
                         var contact = <webimmodel.ContactNotificationMessage>msg.content;
-                        RongIMSDKServer.removeConversation(msg.conversationType, msg.targetId).then(function() {
+                        RongIMSDKServer.removeConversation(msg.conversationType, msg.targetId).then(function () {
                             refreshconversationList();
                         });
 
@@ -494,14 +529,14 @@ mainCtr.controller("mainController", ["$scope", "$state", "$window", "$timeout",
                             });
                             if (!item.name) {
                                 //没获取到名称去服务器获取
-                                mainServer.user.getInfo(contact.sourceUserId).success(function(rep) {
+                                mainServer.user.getInfo(contact.sourceUserId).success(function (rep) {
                                     item.name = rep.result.nickname;
                                     item.portraitUri = rep.result.portraitUri;
                                     item.firstchar = webimutil.ChineseCharacter.getPortraitChar(item.name);
                                     mainDataServer.notification.addNotification(item);
-                                }).error(function() {
+                                }).error(function () {
                                 })
-                            }else{
+                            } else {
                                 mainDataServer.notification.addNotification(item);
                             }
                         } else if (contact.operation == "AcceptResponse") {
@@ -509,7 +544,7 @@ mainCtr.controller("mainController", ["$scope", "$state", "$window", "$timeout",
                             //好友列表里添加好友or同步好友列表
                             var friend = mainDataServer.contactsList.getFriendById(contact.sourceUserId);
                             if (!friend) {
-                                mainServer.user.getInfo(contact.sourceUserId).success(function(rep) {
+                                mainServer.user.getInfo(contact.sourceUserId).success(function (rep) {
                                     var res = rep.result;
                                     mainDataServer.contactsList.addFriend(new webimmodel.Friend({
                                         id: res.id,
@@ -517,7 +552,7 @@ mainCtr.controller("mainController", ["$scope", "$state", "$window", "$timeout",
                                         imgSrc: res.portraitUri
                                     }));
                                     refreshconversationList();
-                                }).error(function() {
+                                }).error(function () {
                                     mainDataServer.contactsList.addFriend(new webimmodel.Friend({
                                         id: contact.sourceUserId,
                                         name: "网络原因暂未取到",
@@ -653,21 +688,21 @@ mainCtr.controller("mainController", ["$scope", "$state", "$window", "$timeout",
                     case webimmodel.MessageType.FileMessage:
                         //隐藏正在输入状态
                         if ($state.is("main.chat") && !document.hidden && msg.conversationType == webimmodel.conversationType.Private && msg.senderUserId == mainDataServer.conversation.currentConversation.targetId) {
-                          mainDataServer.isTyping = false;
+                            mainDataServer.isTyping = false;
                         }
-                        if ($state.is("main.chat") && !document.hidden && msg.senderUserId != mainDataServer.loginUser.id && msg.conversationType == webimmodel.conversationType.Private){
-                          if(data.offLineMessage){
-                            mainDataServer.conversation.lastOfflineMsg = data;
-                            if(!timeOfflineMsg && mainDataServer.conversation.lastOfflineMsg){
-                              timeOfflineMsg = setTimeout(function () {
-                                conversationServer.sendReadReceiptMessage(mainDataServer.conversation.currentConversation.targetId, mainDataServer.conversation.currentConversation.targetType, mainDataServer.conversation.lastOfflineMsg.messageUId, mainDataServer.conversation.lastOfflineMsg.sentTime);
-                                timeOfflineMsg = null;
-                              }, 1000);
+                        if ($state.is("main.chat") && !document.hidden && msg.senderUserId != mainDataServer.loginUser.id && msg.conversationType == webimmodel.conversationType.Private) {
+                            if (data.offLineMessage) {
+                                mainDataServer.conversation.lastOfflineMsg = data;
+                                if (!timeOfflineMsg && mainDataServer.conversation.lastOfflineMsg) {
+                                    timeOfflineMsg = setTimeout(function () {
+                                        conversationServer.sendReadReceiptMessage(mainDataServer.conversation.currentConversation.targetId, mainDataServer.conversation.currentConversation.targetType, mainDataServer.conversation.lastOfflineMsg.messageUId, mainDataServer.conversation.lastOfflineMsg.sentTime);
+                                        timeOfflineMsg = null;
+                                    }, 1000);
+                                }
                             }
-                          }
-                          else{
-                            conversationServer.sendReadReceiptMessage(mainDataServer.conversation.currentConversation.targetId, mainDataServer.conversation.currentConversation.targetType, data.messageUId, data.sentTime);
-                          }
+                            else {
+                                conversationServer.sendReadReceiptMessage(mainDataServer.conversation.currentConversation.targetId, mainDataServer.conversation.currentConversation.targetType, data.messageUId, data.sentTime);
+                            }
                         }
 
                         // if ($state.is("main.chat") && !document.hidden && msg.senderUserId != mainDataServer.loginUser.id && msg.conversationType == webimmodel.conversationType.Group){
@@ -675,51 +710,51 @@ mainCtr.controller("mainController", ["$scope", "$state", "$window", "$timeout",
                         // }
                         addmessage(msg);
                         //TODO 判断是@消息时添加
-                        if(msg.mentionedInfo){
-                          var isAtMe = false;
-                          if(msg.mentionedInfo.type == webimmodel.AtTarget.All){
-                            isAtMe = true;
-                          }
-                          if(msg.mentionedInfo.type == webimmodel.AtTarget.Part){
-                            for(var j = 0; j < msg.mentionedInfo.userIdList.length; j++){
-                               if(msg.mentionedInfo.userIdList[j] == mainDataServer.loginUser.id){
-                                 isAtMe = true;
-                               }
+                        if (msg.mentionedInfo) {
+                            var isAtMe = false;
+                            if (msg.mentionedInfo.type == webimmodel.AtTarget.All) {
+                                isAtMe = true;
                             }
-                          }
-                          if(isAtMe){
-                            conversationServer.addAtMessage(msg.targetId, msg.conversationType, msg);
-                          }
+                            if (msg.mentionedInfo.type == webimmodel.AtTarget.Part) {
+                                for (var j = 0; j < msg.mentionedInfo.userIdList.length; j++) {
+                                    if (msg.mentionedInfo.userIdList[j] == mainDataServer.loginUser.id) {
+                                        isAtMe = true;
+                                    }
+                                }
+                            }
+                            if (isAtMe) {
+                                conversationServer.addAtMessage(msg.targetId, msg.conversationType, msg);
+                            }
                         }
 
                         var isself = mainDataServer.loginUser.id == msg.senderUserId;
-                        if(isself || $state.is("main.chat") && !document.hidden && msg.conversationType == mainDataServer.conversation.currentConversation.targetType && msg.senderUserId == mainDataServer.conversation.currentConversation.targetId){
-                          RongIMSDKServer.clearUnreadCount(msg.conversationType, msg.targetId);
-                          var curCon = mainDataServer.conversation.getConversation(msg.conversationType, msg.targetId);
-                          if (curCon) {
-                              curCon.atStr = '';
-                              mainDataServer.conversation.totalUnreadCount = mainDataServer.conversation.totalUnreadCount - curCon.unReadNum;
-                              curCon.unReadNum = 0;
-                          }
+                        if (isself || $state.is("main.chat") && !document.hidden && msg.conversationType == mainDataServer.conversation.currentConversation.targetType && msg.senderUserId == mainDataServer.conversation.currentConversation.targetId) {
+                            RongIMSDKServer.clearUnreadCount(msg.conversationType, msg.targetId);
+                            var curCon = mainDataServer.conversation.getConversation(msg.conversationType, msg.targetId);
+                            if (curCon) {
+                                curCon.atStr = '';
+                                mainDataServer.conversation.totalUnreadCount = mainDataServer.conversation.totalUnreadCount - curCon.unReadNum;
+                                curCon.unReadNum = 0;
+                            }
                         }
-                        else{
-                          if (msg.senderUserName) {
-                              webimutil.NotificationHelper.showNotification({
-                                  title: msg.senderUserName,
-                                  icon: "assets/img/SealTalk.ico",
-                                  body: webimmodel.Message.messageToNotification(data, mainDataServer.loginUser.id, true), data: { targetId: msg.targetId, targetType: msg.conversationType }
-                              });
-                          }
-                          else {
-                              mainServer.user.getInfo(msg.senderUserId).then(function (rep) {
-                                  msg.senderUserName = rep.data.result.nickname;
-                                  webimutil.NotificationHelper.showNotification({
-                                      title: msg.senderUserName + "(非好友)",
-                                      icon: "assets/img/SealTalk.ico",
-                                      body: webimmodel.Message.messageToNotification(data, mainDataServer.loginUser.id, true), data: { targetId: msg.targetId, targetType: msg.conversationType }
-                                  });
-                              });
-                          }
+                        else {
+                            if (msg.senderUserName) {
+                                webimutil.NotificationHelper.showNotification({
+                                    title: msg.senderUserName,
+                                    icon: "assets/img/SealTalk.ico",
+                                    body: webimmodel.Message.messageToNotification(data, mainDataServer.loginUser.id, true), data: { targetId: msg.targetId, targetType: msg.conversationType }
+                                });
+                            }
+                            else {
+                                mainServer.user.getInfo(msg.senderUserId).then(function (rep) {
+                                    msg.senderUserName = rep.data.result.nickname;
+                                    webimutil.NotificationHelper.showNotification({
+                                        title: msg.senderUserName + "(非好友)",
+                                        icon: "assets/img/SealTalk.ico",
+                                        body: webimmodel.Message.messageToNotification(data, mainDataServer.loginUser.id, true), data: { targetId: msg.targetId, targetType: msg.conversationType }
+                                    });
+                                });
+                            }
                         }
                         break;
                     case webimmodel.MessageType.GroupNotificationMessage:
@@ -727,8 +762,8 @@ mainCtr.controller("mainController", ["$scope", "$state", "$window", "$timeout",
                             //群组信息更新，已经在其他端接收过不做处理。
                             var groupNotification = <any>data.content;
                             var isself = false;
-                            if(groupNotification.operatorUserId == mainDataServer.loginUser.id){
-                              isself = true;
+                            if (groupNotification.operatorUserId == mainDataServer.loginUser.id) {
+                                isself = true;
                             }
                             switch (groupNotification.operation) {
                                 case "Add":
@@ -737,19 +772,19 @@ mainCtr.controller("mainController", ["$scope", "$state", "$window", "$timeout",
                                     var self = changemembers.indexOf(mainDataServer.loginUser.id + "");
                                     if (self == -1) {
                                         for (var a = 0, len = changemembers.length; a < len; a++) {
-                                            mainServer.user.getInfo(changemembers[a]).success(function(rep) {
+                                            mainServer.user.getInfo(changemembers[a]).success(function (rep) {
                                                 mainDataServer.contactsList.addGroupMember(groupid, new webimmodel.Member({
                                                     id: rep.result.id,
                                                     name: rep.result.nickname,
                                                     imgSrc: rep.result.portraitUri,
                                                     role: "1"
                                                 }));
-                                            }).error(function() {
+                                            }).error(function () {
 
                                             });
                                         }
                                     } else {
-                                        mainServer.group.getById(groupid).success(function(rep) {
+                                        mainServer.group.getById(groupid).success(function (rep) {
 
                                             var temporarynotifi = new webimmodel.WarningNoticeMessage(groupNotification.data.data.operatorNickname + "邀请你加入了群组");
                                             mainDataServer.notification.addNotification(temporarynotifi);
@@ -765,7 +800,7 @@ mainCtr.controller("mainController", ["$scope", "$state", "$window", "$timeout",
                                                 fact: 1,
                                                 creater: rep.result.creatorId
                                             }));
-                                            mainServer.group.getGroupMember(groupid).success(function(rep) {
+                                            mainServer.group.getGroupMember(groupid).success(function (rep) {
                                                 var members = rep.result;
                                                 for (var j = 0, len = members.length; j < len; j++) {
                                                     var member = new webimmodel.Member({
@@ -779,7 +814,7 @@ mainCtr.controller("mainController", ["$scope", "$state", "$window", "$timeout",
                                                 }
                                             });
                                             refreshconversationList();
-                                        }).error(function() {
+                                        }).error(function () {
 
                                         })
                                     }
@@ -793,7 +828,7 @@ mainCtr.controller("mainController", ["$scope", "$state", "$window", "$timeout",
                                     } else {
                                         mainDataServer.contactsList.removeGroup(groupid);
 
-                                        RongIMSDKServer.removeConversation(webimmodel.conversationType.Group, groupid).then(function() {
+                                        RongIMSDKServer.removeConversation(webimmodel.conversationType.Group, groupid).then(function () {
                                             refreshconversationList();
                                         });
                                     }
@@ -814,7 +849,7 @@ mainCtr.controller("mainController", ["$scope", "$state", "$window", "$timeout",
                                             mainDataServer.notification.hasNewNotification = true;
                                         }
                                         mainDataServer.contactsList.removeGroup(groupid);
-                                        RongIMSDKServer.removeConversation(webimmodel.conversationType.Group, groupid).then(function() {
+                                        RongIMSDKServer.removeConversation(webimmodel.conversationType.Group, groupid).then(function () {
                                             refreshconversationList();
                                         });
                                         //退出会话状态
@@ -881,7 +916,7 @@ mainCtr.controller("mainController", ["$scope", "$state", "$window", "$timeout",
                                         mainDataServer.notification.hasNewNotification = true;
                                     }
                                     mainDataServer.contactsList.removeGroup(groupid);
-                                    RongIMSDKServer.removeConversation(webimmodel.conversationType.Group, groupid).then(function() {
+                                    RongIMSDKServer.removeConversation(webimmodel.conversationType.Group, groupid).then(function () {
                                         refreshconversationList();
                                     });
                                     //退出会话状态
@@ -897,23 +932,23 @@ mainCtr.controller("mainController", ["$scope", "$state", "$window", "$timeout",
                         }
                         break;
                     case webimmodel.MessageType.InformationNotificationMessage:
-                           addmessage(msg);
+                        addmessage(msg);
                         break;
                     case webimmodel.MessageType.ReadReceiptMessage:
-                           //清除会话已读状态,改变消息总数
-                           if(msg.objectName == 'RC:ReadNtf' && msg.senderUserId == mainDataServer.loginUser.id){
-                             RongIMSDKServer.clearUnreadCount(msg.conversationType, msg.targetId);
-                             var curCon = mainDataServer.conversation.getConversation(msg.conversationType, msg.targetId);
-                             if (curCon) {
-                                 curCon.atStr = '';
-                                 mainDataServer.conversation.totalUnreadCount = mainDataServer.conversation.totalUnreadCount - curCon.unReadNum;
-                                 curCon.unReadNum = 0;
-                             }
-                             //去除消息的未读状态
-                           }
+                        //清除会话已读状态,改变消息总数
+                        if (msg.objectName == 'RC:ReadNtf' && msg.senderUserId == mainDataServer.loginUser.id) {
+                            RongIMSDKServer.clearUnreadCount(msg.conversationType, msg.targetId);
+                            var curCon = mainDataServer.conversation.getConversation(msg.conversationType, msg.targetId);
+                            if (curCon) {
+                                curCon.atStr = '';
+                                mainDataServer.conversation.totalUnreadCount = mainDataServer.conversation.totalUnreadCount - curCon.unReadNum;
+                                curCon.unReadNum = 0;
+                            }
+                            //去除消息的未读状态
+                        }
                         break;
                     case webimmodel.MessageType.RecallCommandMessage:
-                        if(msg.objectName == 'RC:RcCmd'){
+                        if (msg.objectName == 'RC:RcCmd') {
                             // var withDrawMsg = <any>data.content;
                             // conversationServer.addWithDrawMessageCache(msg.senderUserId, msg.conversationType, withDrawMsg.messageUId);
                             // conversationServer.delWithDrawMessage(msg.senderUserId, msg.conversationType, withDrawMsg.messageUId);
@@ -931,10 +966,10 @@ mainCtr.controller("mainController", ["$scope", "$state", "$window", "$timeout",
                         //判断如果为当前输入页面用户
                         if ($state.is("main.chat") && !document.hidden && msg.conversationType == webimmodel.conversationType.Private && msg.senderUserId == mainDataServer.conversation.currentConversation.targetId) {
                             mainDataServer.isTyping = true;
-                            if(typingTimeID){ clearTimeout(typingTimeID);}
+                            if (typingTimeID) { clearTimeout(typingTimeID); }
                             typingTimeID = setTimeout(function () {
-                              mainDataServer.isTyping = false;
-                              $scope.$apply();
+                                mainDataServer.isTyping = false;
+                                $scope.$apply();
                             }, 6000);
                         }
 
@@ -947,26 +982,26 @@ mainCtr.controller("mainController", ["$scope", "$state", "$window", "$timeout",
                         break;
                     case webimmodel.MessageType.ReadReceiptRequestMessage:
                         if ($state.is("main.chat") && !document.hidden && msg.conversationType == webimmodel.conversationType.Group && msg.targetId == mainDataServer.conversation.currentConversation.targetId) {
-                          RongIMSDKServer.sendReceiptResponse(msg.conversationType, msg.targetId).then(function() {
-                              console.log('sendReadReceiptResponseMessage success');
-                          }, function(error) {
-                              console.log('sendReadReceiptResponseMessage error', error.errorCode);
-                          });
+                            RongIMSDKServer.sendReceiptResponse(msg.conversationType, msg.targetId).then(function () {
+                                console.log('sendReadReceiptResponseMessage success');
+                            }, function (error) {
+                                console.log('sendReadReceiptResponseMessage error', error.errorCode);
+                            });
                         }
                         break;
                     case webimmodel.MessageType.ReadReceiptResponseMessage:
                         // var ids = msg.content.receiptMessageDic[RongIMLib.Bridge._client.userId];
                         var receiptResponseItem = <any>data.content;
                         var ids = receiptResponseItem.receiptMessageDic[mainDataServer.loginUser.id];
-                        if(!ids){
-                           return;
+                        if (!ids) {
+                            return;
                         }
-                        for(var i = 0, len = ids.length; i < len; i++){
+                        for (var i = 0, len = ids.length; i < len; i++) {
                             // console.log(ids[i], msg.receiptResponse[ids[i]]);
                             var itemById = conversationServer.getMessageById(msg.targetId, msg.conversationType, ids[i]);
-                            if(itemById && msg.receiptResponse && msg.receiptResponse[ids[i]]){
-                              itemById.receiptResponse = msg.receiptResponse;
-                              // $('#' + ids[i]).find('span.receiptResponse').text(msg.receiptResponse[ids[i]] + '人已读');
+                            if (itemById && msg.receiptResponse && msg.receiptResponse[ids[i]]) {
+                                itemById.receiptResponse = msg.receiptResponse;
+                                // $('#' + ids[i]).find('span.receiptResponse').text(msg.receiptResponse[ids[i]] + '人已读');
                             }
 
                             //遍历,更新缓存中消息的receiptResponse
@@ -1002,7 +1037,7 @@ mainCtr.controller("mainController", ["$scope", "$state", "$window", "$timeout",
             }
             conversationServer.addHistoryMessages(msg.targetId, msg.conversationType, msg);
             if (msg.messageType == webimmodel.MessageType.ImageMessage) {
-                setTimeout(function() {
+                setTimeout(function () {
                     $scope.$broadcast("msglistchange");
                 }, 200)
             } else {
@@ -1011,25 +1046,25 @@ mainCtr.controller("mainController", ["$scope", "$state", "$window", "$timeout",
         }
 
 
-        function showDisconnectErr(flag: boolean){
-          var ele = <any>document.querySelector(".no_network");
-          if (ele) {
-              ele.style.visibility = flag ? 'visible' : 'hidden';
-          }
-          var sendBtn = document.querySelector(".sendBtn");
-          if (sendBtn) {
-              sendBtn.className = flag ? 'sendBtn disabled' : 'sendBtn';
-          }
+        function showDisconnectErr(flag: boolean) {
+            var ele = <any>document.querySelector(".no_network");
+            if (ele) {
+                ele.style.visibility = flag ? 'visible' : 'hidden';
+            }
+            var sendBtn = document.querySelector(".sendBtn");
+            if (sendBtn) {
+                sendBtn.className = flag ? 'sendBtn disabled' : 'sendBtn';
+            }
         }
 
         var reconnectTimes = 0, timeInterval = 20, timeID: any, reconnectTimeID: any;
         function reconnectServer() {
-            if(reconnectTimeID){
-              clearTimeout(reconnectTimeID);
+            if (reconnectTimeID) {
+                clearTimeout(reconnectTimeID);
             }
-            reconnectTimeID = setTimeout(function() {
+            reconnectTimeID = setTimeout(function () {
                 RongIMSDKServer.reconnect({
-                    onSuccess: function() {
+                    onSuccess: function () {
                         var myDate = new Date();
                         reconnectTimes = 0;
 
@@ -1040,11 +1075,11 @@ mainCtr.controller("mainController", ["$scope", "$state", "$window", "$timeout",
                         showDisconnectErr(false);
                         isConnecting = false;
                         mainDataServer.isConnected = true;
-                        RongIMSDKServer.getConversationList().then(function() {
+                        RongIMSDKServer.getConversationList().then(function () {
                             mainDataServer.conversation.updateConversations();
                         });
                     },
-                    onError: function() {
+                    onError: function () {
                         mainDataServer.isConnected = false;
                         isConnecting = false;
                         if (reconnectTimes <= 5) {
@@ -1065,15 +1100,15 @@ mainCtr.controller("mainController", ["$scope", "$state", "$window", "$timeout",
             console.log('begin checkNetwork', myDate.toLocaleString());
             $http.get("index.html", {
                 params: { t: Math.random() }
-            }).success(function() {
-                if(timeID){
-                  clearTimeout(timeID);
+            }).success(function () {
+                if (timeID) {
+                    clearTimeout(timeID);
                 }
                 callback && callback.onSuccess && callback.onSuccess();
-            }).error(function() {
+            }).error(function () {
                 showDisconnectErr(true);
-                if(timeID){
-                  clearTimeout(timeID);
+                if (timeID) {
+                    clearTimeout(timeID);
                 }
                 timeID = setTimeout(function () {
                     checkNetwork(callback);
