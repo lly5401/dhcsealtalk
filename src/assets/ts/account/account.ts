@@ -7,11 +7,16 @@ var account = angular.module("webim.account", ["webim.main.server"]);
 account.controller("signinController", ["$scope", "$state", "mainServer", "mainDataServer", "conversationServer", "RongIMSDKServer",
     function ($scope: any, $state: angular.ui.IStateService, mainServer: mainServer, mainDataServer: mainDataServer, conversationServer: conversationServer, RongIMSDKServer: RongIMSDKServer) {
         //判断参数是否为空    
-        var userPhone = $state.params["userPhone"];
-        alert(userPhone);
+        var userPhone = $state.params["userPhone"];//用户登录的用户名及电话号码
+        //订单id
+        
+        //alert(userPhone);
         if (!userPhone) {
+            alert("没有用户电话");
             return;
         }
+
+        //这要考虑是否清除聊天记录
         conversationServer.historyMessagesCache = {};//清空历史消息
         mainDataServer.conversation.conversations = [];//清空会话列表
 
@@ -37,6 +42,7 @@ account.controller("signinController", ["$scope", "$state", "mainServer", "mainD
                 exdate.setDate(exdate.getDate() + 30);
                 webimutil.CookieHelper.setCookie("loginuserid", rep.result.id, exdate.toGMTString());
                 webimutil.CookieHelper.setCookie("loginusertoken", rep.result.token, exdate.toGMTString());
+                //进入主聊天界面
                 $state.go("main");
 
             } else if (rep.code === 1000) {
@@ -52,6 +58,7 @@ account.controller("signinController", ["$scope", "$state", "mainServer", "mainD
         });
     }])
 
+//用户注册方法可以删除
 account.controller("signupController", ["$scope", "$interval", "$state", "mainServer",
     function ($scope: any, $interval: angular.IIntervalService, $state: angular.ui.IStateService, mainServer: mainServer) {
 
