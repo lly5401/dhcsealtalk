@@ -9,7 +9,7 @@ groupAddMember.controller("groupaddmemberController", ["$scope", "$state", "$sta
             throw new Error("Not implemented yet");
         }
 
-        $scope.idorname = $stateParams["idorname"];
+        $scope.idorname = $stateParams["idorname"];//讨论组名称
 
         $scope.isLoading = false;
 

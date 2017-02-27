@@ -8,8 +8,8 @@ account.controller("signinController", ["$scope", "$state", "mainServer", "mainD
     function ($scope: any, $state: angular.ui.IStateService, mainServer: mainServer, mainDataServer: mainDataServer, conversationServer: conversationServer, RongIMSDKServer: RongIMSDKServer) {
         //判断参数是否为空    
         var userPhone = $state.params["userPhone"];//用户登录的用户名及电话号码
-        //订单id
-        
+        //获取订单id
+
         //alert(userPhone);
         if (!userPhone) {
             alert("没有用户电话");
@@ -42,8 +42,104 @@ account.controller("signinController", ["$scope", "$state", "mainServer", "mainD
                 exdate.setDate(exdate.getDate() + 30);
                 webimutil.CookieHelper.setCookie("loginuserid", rep.result.id, exdate.toGMTString());
                 webimutil.CookieHelper.setCookie("loginusertoken", rep.result.token, exdate.toGMTString());
-                //进入主聊天界面
-                $state.go("main");
+                //进入主页面前先创建分组
+                var idorname = 'test_group';
+                mainServer.user.getMyGroups().success(function (rep) {//获取所有群
+                    var groups = rep.result;
+                    var groupsArray: string[] = new Array();
+                    for (var i = 0, len = groups.length; i < len; i++) {
+                        groupsArray.push(groups[i].group.name);
+                    }
+                    //判断当没有此组的时候创建
+                    //alert(groupsArray.indexOf(idorname) > -1);
+                    if (!(groupsArray.indexOf(idorname.trim()) > -1)) {
+                        var membersid = <string[]>[];
+                        var members = <webimmodel.Friend[]>[];
+                        membersid.push(mainDataServer.loginUser.id);//先将自己加入群聊
+                        //membersid.push('76hkB1h');
+                        mainServer.group.create(idorname, membersid).success(function (rep) {
+                            if (rep.code == 200) {
+                                //alert(200);
+                                var group = new webimmodel.Group({
+                                    id: rep.result.id,
+                                    name: idorname,
+                                    imgSrc: "",
+                                    upperlimit: 500,
+                                    fact: 1,
+                                    creater: mainDataServer.loginUser.id
+                                });
+                                mainDataServer.contactsList.addGroup(group);
+
+                                //1.添加群成员2.添加自己
+                                // mainDataServer.contactsList.addGroupMember(group.id, new webimmodel.Member({
+                                //     id: mainDataServer.loginUser.id,
+                                //     name: '',
+                                //     imgSrc: mainDataServer.loginUser.portraitUri,
+                                //     role: "0"
+                                // }));
+                                // for (var j = 0, len = members.length; j < len; j++) {
+                                //     var member = new webimmodel.Member({
+                                //         id: members[j].id,
+                                //         name: members[j].name,
+                                //         imgSrc: members[j].imgSrc,
+                                //         role: "1"
+                                //     });
+                                //     mainDataServer.contactsList.addGroupMember(group.id, member);
+                                // }
+
+                                // mainDataServer.contactsList.addGroupMember(group.id, new webimmodel.Member({
+                                //     id: mainDataServer.loginUser.id,
+                                //     // name: mainDataServer.loginUser.nickName,
+                                //     name: '15242531110',//不能为空
+                                //     imgSrc: mainDataServer.loginUser.portraitUri,
+                                //     role: "0"
+                                // }));
+                                //添加和工单相关联的群成员
+                                //  var members = <webimmodel.Friend[]>[];
+                                //  alert(members);
+                                // for (var j = 0, len = members.length; j < len; j++) {
+                                //     var member = new webimmodel.Member({
+                                //         id: members[j].id,
+                                //         name: members[j].name,
+                                //         imgSrc: members[j].imgSrc,
+                                //         role: "1"
+                                //     });
+                                //     mainDataServer.contactsList.addGroupMember(group.id, member);
+                                // }
+
+                                // members = undefined;
+                                // mainDataServer.contactsList.addGroupMember(group.id, new webimmodel.Member({
+                                //     id: '76hkB1h',
+                                //     name: '13889413606',
+                                //     imgSrc: null,
+                                //     role: "1"
+                                // }));
+                                members = undefined;
+                                membersid = undefined;
+                                webimutil.Helper.alertMessage.success("创建成功！", 2);
+                                //调到当前群聊天页面暂时不用
+                                //$state.go("main.chat", { targetId: group.id, targetType: webimmodel.conversationType.Group });
+                            } else if (rep.code == 1000) {
+                                //群组超过上限
+                                webimutil.Helper.alertMessage.error("群组超过上限", 2);
+                            }
+                            //进入主聊天界面
+                             $state.go("main");
+                        }).error(function (err) {
+                            webimutil.Helper.alertMessage.error("失败", 2);
+                        });
+
+                        //创建群组结束
+                    } else {
+                        //进入主聊天界面
+                        $state.go("main");
+                    }
+
+                }).error(function (err) {
+                    webimutil.Helper.alertMessage.error("获取群组消息失败", 2);
+                })
+
+
 
             } else if (rep.code === 1000) {
                 //用户或密码错误
@@ -58,115 +154,9 @@ account.controller("signinController", ["$scope", "$state", "mainServer", "mainD
         });
     }])
 
-//用户注册方法可以删除
-account.controller("signupController", ["$scope", "$interval", "$state", "mainServer",
-    function ($scope: any, $interval: angular.IIntervalService, $state: angular.ui.IStateService, mainServer: mainServer) {
+//创建群聊
 
-        $scope.user = {
-            // accountNumber: "",
-            nickname: "",
-            phone: "",
-            code: "",
-            passWord: ""
-        }
-
-        $scope.$watch("user.code", function () {
-            $scope.codeIsError = false;
-        });
-
-        $scope.signup = function () {
-            $scope.formSignup.submitted = true;
-            if ($scope.formSignup.$valid) {
-                mainServer.user.verifyCode($scope.user.phone, "86", $scope.user.code).success(function (data) {
-                    if (data.code == 200 && data.result.verification_token) {
-                        mainServer.user.signup($scope.user.nickname, $scope.user.passWord, data.result.verification_token).
-                            success(function (e) {
-                                webimutil.Helper.alertMessage.success("注册成功", 2);
-                                $state.go("account.signin");
-                            }).error(function (e) {
-                                webimutil.Helper.alertMessage.error("注册失败", 2);
-                            })
-                    } else {
-                        //短信验证码错误
-                        $scope.codeIsError = true;
-                    }
-
-                }).error(function (error, code) {
-                    if (code == 403) {
-                        webimutil.Helper.alertMessage.error("手机号已被注册过", 2);
-                    } else if (code == 404) {
-                        // webimutil.Helper.alertMessage.error("验证过期刷新重试！");
-                        $scope.codeIsError = true;
-                    } else {
-                        $scope.codeIsError = true;
-                    }
-                });
-            }
-        }
-
-    }])
-
-account.controller("forgotpasswordController", ["$scope", "$state", "mainServer",
-    function ($scope: any, $state: angular.ui.IStateService, mainServer: mainServer) {
-        $scope.user = {
-            phone: "",
-            code: ""
-        }
-
-        $scope.codeIsError = false;
-
-        $scope.$watch("user.code", function () {
-            $scope.codeIsError = false;
-        })
-
-        $scope.nextfun = function () {
-            $scope.formFogot.submitted = true;
-            if ($scope.formFogot.$valid) {
-                mainServer.user.verifyCode($scope.user.phone, "86", $scope.user.code).success(function (res) {
-                    if (res.code == 200 && res.result.verification_token) {
-                        $state.go("account.resetpassword", { token: res.result.verification_token });
-                    } else {
-                        //短信验证码错误
-                        $scope.codeIsError = true;
-                    }
-                }).error(function (e) {
-
-                })
-            }
-        }
-    }])
-
-account.controller("resetpasswordController", ["$scope", "$state", "$stateParams", "mainServer",
-    function ($scope: any, $state: angular.ui.IStateService, $stateParams: angular.ui.IStateParamsService, mainServer: mainServer) {
-
-        var token = $stateParams["token"];
-        $scope.user = {
-            newpassword: "",
-            repassword: ""
-        }
-
-        $scope.submit = function () {
-            $scope.formResetPwd.submitted = true;
-            if ($scope.formResetPwd.$valid) {
-                mainServer.user.resetPassword($scope.user.newpassword, token).success(function (req) {
-                    if (req.code == 200) {
-                        $state.go("account.signin");
-                        webimutil.Helper.alertMessage.success("重置成功", 2);
-                    } else {
-                        webimutil.Helper.alertMessage.error("重置失败", 2);
-                    }
-                }).error(function (error, code) {
-                    if (code == 400) {
-                        webimutil.Helper.alertMessage.error("重置失败", 2);
-                    } else if (code == 404) {
-                        webimutil.Helper.alertMessage.error("重置失败", 2);
-                    }
-                });
-            }
-        }
-
-    }]);
-
+//验证用户名是否有效暂时没用
 account.directive("usernameAvailable", ["$http", "$q", "mainServer",
     function ($http: angular.IHttpService, $q: angular.IQService, mainServer: mainServer) {
         return {
@@ -199,7 +189,7 @@ account.directive("usernameAvailable", ["$http", "$q", "mainServer",
             }
         }
     }]);
-
+//验证电话号码是否有效暂时没用
 account.directive("phoneAvailable", ["$http", "$q", "mainServer",
     function ($http: angular.IHttpService, $q: angular.IQService, mainServer: mainServer) {
         return {
@@ -232,7 +222,7 @@ account.directive("phoneAvailable", ["$http", "$q", "mainServer",
             }
         }
     }]);
-
+//电话注册暂时没用
 account.directive("phoneRegistered", ["$http", "$q", "mainServer",
     function ($http: angular.IHttpService, $q: angular.IQService, mainServer: mainServer) {
         return {
@@ -265,7 +255,7 @@ account.directive("phoneRegistered", ["$http", "$q", "mainServer",
             }
         }
     }])
-
+//发送验证码暂时没用
 account.directive("sendCodeButton", ["$interval", "mainServer", function ($interval: angular.IIntervalService, mainServer: mainServer) {
     return {
         restrict: "E",
