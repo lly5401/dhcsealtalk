@@ -37,6 +37,7 @@ account.controller("signinController", ["$scope", "$state", "mainServer", "mainD
             if (rep.code === 200) {
                 // 登录账户
                 mainDataServer.loginUser.id = rep.result.id;
+                alert( rep.result.id);
                 mainDataServer.loginUser.token = rep.result.token;
                 var exdate = new Date();
                 exdate.setDate(exdate.getDate() + 30);
@@ -59,6 +60,7 @@ account.controller("signinController", ["$scope", "$state", "mainServer", "mainD
                         //membersid.push('76hkB1h');
                         mainServer.group.create(idorname, membersid).success(function (rep) {
                             if (rep.code == 200) {
+                                
                                 //alert(200);
                                 var group = new webimmodel.Group({
                                     id: rep.result.id,
@@ -69,51 +71,34 @@ account.controller("signinController", ["$scope", "$state", "mainServer", "mainD
                                     creater: mainDataServer.loginUser.id
                                 });
                                 mainDataServer.contactsList.addGroup(group);
-
-                                //1.添加群成员2.添加自己
-                                // mainDataServer.contactsList.addGroupMember(group.id, new webimmodel.Member({
-                                //     id: mainDataServer.loginUser.id,
-                                //     name: '',
-                                //     imgSrc: mainDataServer.loginUser.portraitUri,
-                                //     role: "0"
-                                // }));
-                                // for (var j = 0, len = members.length; j < len; j++) {
-                                //     var member = new webimmodel.Member({
-                                //         id: members[j].id,
-                                //         name: members[j].name,
-                                //         imgSrc: members[j].imgSrc,
-                                //         role: "1"
-                                //     });
-                                //     mainDataServer.contactsList.addGroupMember(group.id, member);
-                                // }
-
-                                // mainDataServer.contactsList.addGroupMember(group.id, new webimmodel.Member({
-                                //     id: mainDataServer.loginUser.id,
-                                //     // name: mainDataServer.loginUser.nickName,
-                                //     name: '15242531110',//不能为空
-                                //     imgSrc: mainDataServer.loginUser.portraitUri,
-                                //     role: "0"
-                                // }));
-                                //添加和工单相关联的群成员
-                                //  var members = <webimmodel.Friend[]>[];
-                                //  alert(members);
-                                // for (var j = 0, len = members.length; j < len; j++) {
-                                //     var member = new webimmodel.Member({
-                                //         id: members[j].id,
-                                //         name: members[j].name,
-                                //         imgSrc: members[j].imgSrc,
-                                //         role: "1"
-                                //     });
-                                //     mainDataServer.contactsList.addGroupMember(group.id, member);
-                                // }
-
-                                // members = undefined;
-                                // mainDataServer.contactsList.addGroupMember(group.id, new webimmodel.Member({
-                                //     id: '76hkB1h',
-                                //     name: '13889413606',
-                                //     imgSrc: null,
-                                //     role: "1"
-                                // }));
+                                //test-----开始    
+                                var member = new webimmodel.Member({
+                                                id: 'mm05SV0',
+                                                name: '13889413605',
+                                                imgSrc: null,
+                                                role: "1"
+                                            });
+                                var membersid1 = <string[]>[];
+                                membersid1.push('mm05SV0');
+                                mainServer.group.addMember(group.id,membersid1 ).success(function (rep) {
+                                    if (rep.code == 200) {
+                                        var member = new webimmodel.Member({
+                                                id: 'mm05SV0',
+                                                name: '13889413605',
+                                                imgSrc: null,
+                                                role: "1"
+                                            });
+                                        mainDataServer.contactsList.addGroupMember(group.id, member);
+                                        members = undefined;
+                                        membersid = undefined;
+                                        //$state.go("main.groupinfo", { groupid:idorname });
+                                        $state.go("main");
+                                        webimutil.Helper.alertMessage.success("添加成功！", 2);
+                                    }
+                                }).error(function (err) {
+                                    webimutil.Helper.alertMessage.error("失败1", 2);
+                                });
+                                //test-----结束
                                 members = undefined;
                                 membersid = undefined;
                                 webimutil.Helper.alertMessage.success("创建成功！", 2);
@@ -124,9 +109,9 @@ account.controller("signinController", ["$scope", "$state", "mainServer", "mainD
                                 webimutil.Helper.alertMessage.error("群组超过上限", 2);
                             }
                             //进入主聊天界面
-                             $state.go("main");
+                           //$state.go("main");
                         }).error(function (err) {
-                            webimutil.Helper.alertMessage.error("失败", 2);
+                            webimutil.Helper.alertMessage.error("失败2", 2);
                         });
 
                         //创建群组结束
