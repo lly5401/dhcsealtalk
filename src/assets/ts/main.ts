@@ -100,7 +100,7 @@ webimApp.config(["$provide", "$stateProvider", "$urlRouterProvider", "$httpProvi
             url: "/forgetPassword",
             templateUrl: "assets/views/forgetPassword.html"
         }).state("main", {
-            url: '/main',
+            url: '/main/:cvsType/:groupId',
             templateUrl: 'assets/views/main.html',
             controller: 'mainController'
         }).state("main.chat", {

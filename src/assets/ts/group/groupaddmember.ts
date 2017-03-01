@@ -56,7 +56,7 @@ groupAddMember.controller("groupaddmemberController", ["$scope", "$state", "$sta
 
                 //请求服务创建群组 将自己加入
                 membersid.push(mainDataServer.loginUser.id);
-                mainServer.group.create($scope.idorname, membersid).success(function(rep) {
+                mainServer.group.create($scope.idorname, membersid,null).success(function(rep) {
                     if (rep.code == 200) {
                         var group = new webimmodel.Group({
                             id: rep.result.id,

@@ -10,7 +10,6 @@ account.controller("signinController", ["$scope", "$state", "mainServer", "mainD
         var userPhone = $state.params["userPhone"];//用户登录的用户名及电话号码
         //获取订单id
 
-        //alert(userPhone);
         if (!userPhone) {
             alert("没有用户电话");
             return;
@@ -33,96 +32,47 @@ account.controller("signinController", ["$scope", "$state", "mainServer", "mainD
         }
         webimutil.CookieHelper.removeCookie("loginuserid");//清除登录状态
         mainDataServer.loginUser = new webimmodel.UserInfo();//清除用户信息
-        mainServer.user.signin(userPhone, "86", '1').success(function (rep) {
+        mainServer.user.signin(userPhone, "86", '1', 'B').success(function (rep) {
             if (rep.code === 200) {
                 // 登录账户
                 mainDataServer.loginUser.id = rep.result.id;
-                alert( rep.result.id);
+                //alert(rep.result.id);
                 mainDataServer.loginUser.token = rep.result.token;
                 var exdate = new Date();
                 exdate.setDate(exdate.getDate() + 30);
                 webimutil.CookieHelper.setCookie("loginuserid", rep.result.id, exdate.toGMTString());
                 webimutil.CookieHelper.setCookie("loginusertoken", rep.result.token, exdate.toGMTString());
                 //进入主页面前先创建分组
-                var idorname = 'test_group';
-                mainServer.user.getMyGroups().success(function (rep) {//获取所有群
-                    var groups = rep.result;
-                    var groupsArray: string[] = new Array();
-                    for (var i = 0, len = groups.length; i < len; i++) {
-                        groupsArray.push(groups[i].group.name);
-                    }
-                    //判断当没有此组的时候创建
-                    //alert(groupsArray.indexOf(idorname) > -1);
-                    if (!(groupsArray.indexOf(idorname.trim()) > -1)) {
-                        var membersid = <string[]>[];
-                        var members = <webimmodel.Friend[]>[];
-                        membersid.push(mainDataServer.loginUser.id);//先将自己加入群聊
-                        //membersid.push('76hkB1h');
-                        mainServer.group.create(idorname, membersid).success(function (rep) {
-                            if (rep.code == 200) {
-                                
-                                //alert(200);
-                                var group = new webimmodel.Group({
-                                    id: rep.result.id,
-                                    name: idorname,
-                                    imgSrc: "",
-                                    upperlimit: 500,
-                                    fact: 1,
-                                    creater: mainDataServer.loginUser.id
-                                });
-                                mainDataServer.contactsList.addGroup(group);
-                                //test-----开始    
-                                var member = new webimmodel.Member({
-                                                id: 'mm05SV0',
-                                                name: '13889413605',
-                                                imgSrc: null,
-                                                role: "1"
-                                            });
-                                var membersid1 = <string[]>[];
-                                membersid1.push('mm05SV0');
-                                mainServer.group.addMember(group.id,membersid1 ).success(function (rep) {
-                                    if (rep.code == 200) {
-                                        var member = new webimmodel.Member({
-                                                id: 'mm05SV0',
-                                                name: '13889413605',
-                                                imgSrc: null,
-                                                role: "1"
-                                            });
-                                        mainDataServer.contactsList.addGroupMember(group.id, member);
-                                        members = undefined;
-                                        membersid = undefined;
-                                        //$state.go("main.groupinfo", { groupid:idorname });
-                                        $state.go("main");
-                                        webimutil.Helper.alertMessage.success("添加成功！", 2);
-                                    }
-                                }).error(function (err) {
-                                    webimutil.Helper.alertMessage.error("失败1", 2);
-                                });
-                                //test-----结束
-                                members = undefined;
-                                membersid = undefined;
-                                webimutil.Helper.alertMessage.success("创建成功！", 2);
-                                //调到当前群聊天页面暂时不用
-                                //$state.go("main.chat", { targetId: group.id, targetType: webimmodel.conversationType.Group });
-                            } else if (rep.code == 1000) {
-                                //群组超过上限
-                                webimutil.Helper.alertMessage.error("群组超过上限", 2);
-                            }
-                            //进入主聊天界面
-                           //$state.go("main");
-                        }).error(function (err) {
-                            webimutil.Helper.alertMessage.error("失败2", 2);
+                var idorname = 'test_group';//订单ID
+                var membersid = <string[]>[];
+                membersid.push(mainDataServer.loginUser.id);//先将自己加入群聊
+                mainServer.group.create(idorname, membersid, idorname).success(function (rep) {
+                    if (rep.code == 200) {
+                        var group = new webimmodel.Group({
+                            id: rep.result.id,
+                            name: idorname,
+                            imgSrc: "",
+                            upperlimit: 500,
+                            fact: 1,
+                            creater: mainDataServer.loginUser.id
                         });
-
-                        //创建群组结束
-                    } else {
-                        //进入主聊天界面
-                        $state.go("main");
+                        mainDataServer.contactsList.addGroup(group);
+                        membersid = undefined;
+                        //alert(1);
+                        var cvsType = 'gt' ;//设置请来源
+                        $state.go("main",{cvsType:cvsType,groupId:group.id});
+                        //webimutil.Helper.alertMessage.success("创建成功！", 2);
+                        //调到当前群聊天页面暂时不用
+                        //$state.go("main.chat", { targetId: group.id, targetType: webimmodel.conversationType.Group });
+                    } else if (rep.code == 1000) {
+                        //群组超过上限
+                        webimutil.Helper.alertMessage.error("群组超过上限", 2);
                     }
-
+                    //进入主聊天界面
+                    
                 }).error(function (err) {
-                    webimutil.Helper.alertMessage.error("获取群组消息失败", 2);
-                })
+                    webimutil.Helper.alertMessage.error("失败2", 2);
+                });
 
 
 

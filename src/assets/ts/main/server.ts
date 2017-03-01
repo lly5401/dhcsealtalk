@@ -61,14 +61,15 @@ mainServer.factory("mainServer", ["$http", "$q", "appconfig", function($http: an
                     }
                 })
             },
-            signin: function(phone: string, region: string, password: string) {
+            signin: function(phone: string, region: string, password: string,usertype: string) {
                 return $http({
                     method: "POST",
                     url: serverBaseUrl + "/user/login",
                     data: {
                         phone: phone,
                         region: region,
-                        password: password
+                        password: password,
+                        usertype:usertype
                     }
                 })
             },
@@ -240,13 +241,14 @@ mainServer.factory("mainServer", ["$http", "$q", "appconfig", function($http: an
             }
         },
         group: {
-            create: function(name: string, memberIds: string[]) {
+            create: function(name: string, memberIds: string[],orderid:string) {
                 return $http({
                     method: "POST",
                     url: serverBaseUrl + "/group/create",
                     data: {
                         name: name,
-                        memberIds: memberIds
+                        memberIds: memberIds,
+                        orderid
                     }
                 })
             },
@@ -1716,7 +1718,7 @@ interface mainServer {
         checkUsernameAvailable(username: string): angular.IHttpPromise<any>
         checkPhoneAvailable(phone: string, region: string): angular.IHttpPromise<any>
         signup(nickname: string, password: string, token: string): angular.IHttpPromise<any>
-        signin(phone: string, region: string, password: string): angular.IHttpPromise<any>
+        signin(phone: string, region: string, password: string,usertype: string): angular.IHttpPromise<any>
         logout(): angular.IHttpPromise<any>
         getInfo(id: string): angular.IHttpPromise<{ result: { id: string, nickname: string, portraitUri: string, displayName: string }, code: number }>
         getBatchInfo(id: string[]): angular.IHttpPromise<{ result: [{ id: string, nickname: string, portraitUri: string, displayName: string }], code: number }>
@@ -1742,7 +1744,7 @@ interface mainServer {
         setDisplayName(friendId: string, displayName: string): angular.IHttpPromise<any>
     }
     group: {
-        create(name: string, memberIds: string[]): angular.IHttpPromise<any>
+        create(name: string, memberIds: string[],orderid:string): angular.IHttpPromise<any>
         rename(groupId: string, name: string): angular.IHttpPromise<any>
         getById(id: string): angular.IHttpPromise<{ result: { id: string, name: string, portraitUri: string, memberCount: string, creatorId: string }, code: number }>
         getGroupMember(id: string): angular.IHttpPromise<any>

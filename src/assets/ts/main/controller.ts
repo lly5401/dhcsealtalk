@@ -13,8 +13,10 @@ mainCtr.controller("mainController", ["$scope", "$state", "$window", "$timeout",
         $http: angular.IHttpService,
         mainDataServer: mainDataServer, conversationServer: conversationServer, mainServer: mainServer, RongIMSDKServer: RongIMSDKServer, appconfig: any) {
         var isConnecting = false
+        var cvsType = $state.params["cvsType"];
+        var groupId = $state.params["groupId"];
         //获取链接参数的值
-        
+
         if (!mainDataServer.loginUser.id) {
             var userid = webimutil.CookieHelper.getCookie("loginuserid"), usertoken = webimutil.CookieHelper.getCookie("loginusertoken");
             if (userid) {
@@ -300,9 +302,9 @@ mainCtr.controller("mainController", ["$scope", "$state", "$window", "$timeout",
                     });
                 }(group.id);
             }
-        }).error(function (err) {
+        }).error(function (e) {
 
-        })
+        });
 
         RongIMSDKServer.init(appconfig.getAppKey());
 
@@ -310,6 +312,9 @@ mainCtr.controller("mainController", ["$scope", "$state", "$window", "$timeout",
             RongIMSDKServer.connect(<string>mainDataServer.loginUser.token).then(function (userId) {
                 console.log("connect success1:" + userId);
                 RongIMSDKServer.getConversationList().then(function (list) {
+                    if (cvsType) {
+                        $state.go("main.chat", { targetId: groupId, targetType: webimmodel.conversationType.Group }, { location: "replace" });
+                    }
                     mainDataServer.conversation.updateConversations();
                 });
                 RongIMLib.RongUploadLib.init(
@@ -324,6 +329,9 @@ mainCtr.controller("mainController", ["$scope", "$state", "$window", "$timeout",
                             RongIMSDKServer.connect(<string>data.result.token).then(function (userId) {
                                 console.log("connect success2:" + userId);
                                 RongIMSDKServer.getConversationList().then(function (list) {
+                                    if (cvsType) {
+                                        $state.go("main.chat", { targetId: groupId, targetType: webimmodel.conversationType.Group }, { location: "replace" });
+                                    }
                                     mainDataServer.conversation.updateConversations();
                                 });
                                 RongIMLib.RongUploadLib.init(
