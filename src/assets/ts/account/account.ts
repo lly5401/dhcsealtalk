@@ -8,6 +8,7 @@ account.controller("signinController", ["$scope", "$state", "mainServer", "mainD
     function ($scope: any, $state: angular.ui.IStateService, mainServer: mainServer, mainDataServer: mainDataServer, conversationServer: conversationServer, RongIMSDKServer: RongIMSDKServer) {
         //判断参数是否为空    
         var userPhone = $state.params["userPhone"];//用户登录的用户名及电话号码
+        var orderId = $state.params["orderId"];//订单ID
         //获取订单id
 
         if (!userPhone) {
@@ -43,7 +44,7 @@ account.controller("signinController", ["$scope", "$state", "mainServer", "mainD
                 webimutil.CookieHelper.setCookie("loginuserid", rep.result.id, exdate.toGMTString());
                 webimutil.CookieHelper.setCookie("loginusertoken", rep.result.token, exdate.toGMTString());
                 //进入主页面前先创建分组
-                var idorname = 'test_group';//订单ID
+                var idorname = orderId;//'test_group';//订单ID
                 var membersid = <string[]>[];
                 membersid.push(mainDataServer.loginUser.id);//先将自己加入群聊
                 mainServer.group.create(idorname, membersid, idorname).success(function (rep) {
