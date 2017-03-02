@@ -2,6 +2,7 @@ bower_components
 src/assets/lib/rongsdk.js
 node_modules
 build
+dist
 temp
 typings
 .tscache
