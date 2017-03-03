@@ -238,7 +238,13 @@ mainServer.factory("mainServer", ["$http", "$q", "appconfig", function($http: an
                         displayName: displayName
                     }
                 })
-            }
+            },
+            getLinkMan: function(rtype:string, deptno:string, no:string){
+                return $http({
+                    method: "get",
+                    url: serverBaseUrl + "/user/strangers/" + rtype + "/" +deptno+"/"+no
+                });
+             }
         },
         group: {
             create: function(name: string, memberIds: string[],orderid:string) {
@@ -1742,6 +1748,7 @@ interface mainServer {
         getProfile(id: string): angular.IHttpPromise<any>
         delete(friendId: string): angular.IHttpPromise<any>
         setDisplayName(friendId: string, displayName: string): angular.IHttpPromise<any>
+        getLinkMan(rtype:string, deptno:string,no:string): angular.IHttpPromise<any>
     }
     group: {
         create(name: string, memberIds: string[],orderid:string): angular.IHttpPromise<any>

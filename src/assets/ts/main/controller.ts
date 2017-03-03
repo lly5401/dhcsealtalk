@@ -227,6 +227,15 @@ mainCtr.controller("mainController", ["$scope", "$state", "$window", "$timeout",
         //初始化好友数据   邀请通知一起通过好友关系表获取解析
         mainDataServer.notification.notificationList = [];
         mainDataServer.contactsList.subgroupList = [];
+        //获取联系人列表
+        // var rtype = 'E';
+        // var deptno = '602682';
+        // var no = '614656';
+        // mainServer.friend.getLinkMan(rtype,deptno,no).success(function(rep){
+        //      var arr = rep.result;
+        // }).error(function(err){
+        //      console.log(err);
+        // });
         mainServer.friend.getAll().success(function (rep) {
             var arr = rep.result;
             for (let i = 0, len = arr.length; i < len; i++) {

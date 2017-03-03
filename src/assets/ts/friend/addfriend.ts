@@ -11,8 +11,9 @@ addfirendCtr.controller("searchfriendController", ["$scope", "$state", "mainServ
 
         $scope.searchfriend = function(content: any) {
             $scope.friendlist = <webimmodel.UserInfo[]>[];
-            var reg = /^1[3-9][0-9]{9,9}$/;
-            if (reg.test(content)) {
+            //ar reg = /^1[3-9][0-9]{9,9}$/;//不搜索用户手机号
+            //if (reg.test(content)) {
+            if (content) {
                 $scope.getresultnull = false;
                 mainServer.user.getUserByPhone("86", content).success(function(rep: any) {
                     if (rep.code == 200) {

@@ -33,7 +33,7 @@ account.controller("signinController", ["$scope", "$state", "mainServer", "mainD
         }
         webimutil.CookieHelper.removeCookie("loginuserid");//清除登录状态
         mainDataServer.loginUser = new webimmodel.UserInfo();//清除用户信息
-        mainServer.user.signin(userPhone, "86", '1', 'B').success(function (rep) {
+        mainServer.user.signin(userPhone, "86", '1', 'E').success(function (rep) {
             if (rep.code === 200) {
                 // 登录账户
                 mainDataServer.loginUser.id = rep.result.id;
