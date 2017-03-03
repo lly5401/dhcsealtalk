@@ -247,14 +247,15 @@ mainServer.factory("mainServer", ["$http", "$q", "appconfig", function($http: an
              }
         },
         group: {
-            create: function(name: string, memberIds: string[],orderid:string) {
+            create: function(name: string, memberIds: string[],orderid:string, deptno:string) {
                 return $http({
                     method: "POST",
                     url: serverBaseUrl + "/group/create",
                     data: {
                         name: name,
                         memberIds: memberIds,
-                        orderid
+                        orderid:orderid,
+                        deptno:deptno
                     }
                 })
             },
@@ -1751,7 +1752,7 @@ interface mainServer {
         getLinkMan(rtype:string, deptno:string,no:string): angular.IHttpPromise<any>
     }
     group: {
-        create(name: string, memberIds: string[],orderid:string): angular.IHttpPromise<any>
+        create(name: string, memberIds: string[],orderid:string,deptno:string): angular.IHttpPromise<any>
         rename(groupId: string, name: string): angular.IHttpPromise<any>
         getById(id: string): angular.IHttpPromise<{ result: { id: string, name: string, portraitUri: string, memberCount: string, creatorId: string }, code: number }>
         getGroupMember(id: string): angular.IHttpPromise<any>

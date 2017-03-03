@@ -5,36 +5,40 @@
 var addfirendCtr = angular.module("webim.addfirend", ["webim.main.server"]);
 
 addfirendCtr.controller("searchfriendController", ["$scope", "$state", "mainServer",
-    function($scope: any, $state: angular.ui.IStateService, mainServer: mainServer) {
+    function ($scope: any, $state: angular.ui.IStateService, mainServer: mainServer) {
 
         $scope.friendlist = <webimmodel.UserInfo[]>[];
 
-        $scope.searchfriend = function(content: any) {
+        $scope.searchfriend = function (content: any) {
             $scope.friendlist = <webimmodel.UserInfo[]>[];
             //ar reg = /^1[3-9][0-9]{9,9}$/;//不搜索用户手机号
             //if (reg.test(content)) {
             if (content) {
                 $scope.getresultnull = false;
-                mainServer.user.getUserByPhone("86", content).success(function(rep: any) {
+                mainServer.user.getUserByPhone("86", content).success(function (rep: any) {
                     if (rep.code == 200) {
-                        var user = new webimmodel.UserInfo();
-                        user.id = rep.result.id;
-                        user.nickName = rep.result.nickname;
-                        user.portraitUri = rep.result.portraitUri;
-                        user.firstchar = webimutil.ChineseCharacter.getPortraitChar(rep.result.nickname);
+                        var arr = rep.result;
+                        for (let i = 0, len = arr.length; i < len; i++) {
+                            var user = new webimmodel.UserInfo();
+                            user.id = arr.id;
+                            user.nickName = arr.nickname;
+                            user.portraitUri = arr.portraitUri;
+                            user.firstchar = webimutil.ChineseCharacter.getPortraitChar(arr.nickname);
 
-                        user.phone = "";
-                        user.region = "";
-                        $scope.friendlist.push(user);
+                            user.phone = "";
+                            user.region = "";
+                            $scope.friendlist.push(user);
+                        }
+
                     }
-                }).error(function(err) {
+                }).error(function (err) {
                     console.log(err);
                     $scope.getresultnull = true;
                 })
             }
         }
 
-        $scope.back = function() {
+        $scope.back = function () {
             // $state.go("main");
             window.history.back();
         }
@@ -42,18 +46,18 @@ addfirendCtr.controller("searchfriendController", ["$scope", "$state", "mainServ
     }])
 
 addfirendCtr.controller("applyfriendController", ["$scope", "$state", "$stateParams", "mainServer", "mainDataServer",
-    function($scope: any, $state: angular.ui.IStateService, $stateParams: angular.ui.IStateParamsService, mainServer: mainServer, mainDataServer: mainDataServer) {
+    function ($scope: any, $state: angular.ui.IStateService, $stateParams: angular.ui.IStateParamsService, mainServer: mainServer, mainDataServer: mainDataServer) {
 
         var userId = $stateParams["userId"];
         var userName = $stateParams["userName"];
         var groupid = $stateParams["groupid"];
         var targetid = $stateParams["targetid"];
         var conversationtype = $stateParams["conversationtype"];
-        var addfriendinfo = "我是" +  mainDataServer.loginUser.nickName;
+        var addfriendinfo = "我是" + mainDataServer.loginUser.nickName;
 
         $scope.title = userName;
         // $scope.message = '我是' + userName;
-        $scope.applyfriendbtn = function() {
+        $scope.applyfriendbtn = function () {
             var id = userId;
             if (!$scope.message) {
                 webimutil.Helper.alertMessage.error("消息不可为空！", 2);
@@ -64,7 +68,7 @@ addfirendCtr.controller("applyfriendController", ["$scope", "$state", "$statePar
                 return;
             }
 
-            mainServer.friend.invite(id, $scope.message).success(function(rep) {
+            mainServer.friend.invite(id, $scope.message).success(function (rep) {
                 // $state.go("main");
                 $state.go("main.friendinfo", { userid: userId, groupid: groupid, targetid: targetid, conversationtype: conversationtype });
 
@@ -75,7 +79,7 @@ addfirendCtr.controller("applyfriendController", ["$scope", "$state", "$statePar
                         name: userName,
                         imgSrc: ""
                     });
-                    mainServer.user.getInfo(id).success(function(rep) {
+                    mainServer.user.getInfo(id).success(function (rep) {
                         addfriend.imgSrc = rep.result.portraitUri;
                     });
                     mainDataServer.contactsList.addFriend(addfriend);
@@ -86,7 +90,7 @@ addfirendCtr.controller("applyfriendController", ["$scope", "$state", "$statePar
                     console.log(rep);
                 }
 
-            }).error(function(err, code) {
+            }).error(function (err, code) {
                 if (code == 400) {
                     webimutil.Helper.alertMessage.error("已经是好友！", 2);
                 } else {
@@ -94,24 +98,24 @@ addfirendCtr.controller("applyfriendController", ["$scope", "$state", "$statePar
                 }
             })
         };
-        $scope.back = function() {
+        $scope.back = function () {
             if (conversationtype) {
                 $state.go("main.friendinfo", { userid: userId, groupid: groupid, targetid: targetid, conversationtype: conversationtype });
             } else {
                 $state.go("main.searchfriend");
             }
         }
-        if(groupid != '0' && groupid !=''){
-             var groupname = mainDataServer.contactsList.getGroupById(groupid) ? mainDataServer.contactsList.getGroupById(groupid).name : groupid;
-             addfriendinfo = "我是“" + groupname + "群”的" + mainDataServer.loginUser.nickName;
+        if (groupid != '0' && groupid != '') {
+            var groupname = mainDataServer.contactsList.getGroupById(groupid) ? mainDataServer.contactsList.getGroupById(groupid).name : groupid;
+            addfriendinfo = "我是“" + groupname + "群”的" + mainDataServer.loginUser.nickName;
         }
-        $scope.getInfo = function() {
+        $scope.getInfo = function () {
             return addfriendinfo;
         }
     }]);
 
 addfirendCtr.directive("addfirenditem", ["$state", "mainDataServer",
-    function($state: angular.ui.IStateService, mainDataServer: mainDataServer) {
+    function ($state: angular.ui.IStateService, mainDataServer: mainDataServer) {
         return {
             restrict: "E",
             scope: { item: "=" },
@@ -127,9 +131,9 @@ addfirendCtr.directive("addfirenditem", ["$state", "mainDataServer",
             '<button class="functionBoxBtn" ng-click="applyfriendsrc()" ng-show="!isself">加好友</button>' +
             '</div>' +
             '</li>',
-            link: function(scope: any, ele: angular.IRootElementService, attr: any) {
+            link: function (scope: any, ele: angular.IRootElementService, attr: any) {
                 angular.element(ele[0].getElementsByClassName("portrait")[0]).css("background-color", webimutil.Helper.portraitColors[scope.item.id.charCodeAt(0) % webimutil.Helper.portraitColors.length]);
-                scope.applyfriendsrc = function() {
+                scope.applyfriendsrc = function () {
                     var friend = mainDataServer.contactsList.getFriendById(scope.item.id);
                     if (friend) {
                         webimutil.Helper.alertMessage.error("此人已经是您的好友！", 2);
@@ -138,8 +142,8 @@ addfirendCtr.directive("addfirenditem", ["$state", "mainDataServer",
                     $state.go("main.applyfriend", { userId: scope.item.id, userName: scope.item.nickName });
                 }
                 scope.isself = mainDataServer.loginUser.id == scope.item.id;
-                if(scope.isself){
-                  angular.element(ele[0].getElementsByClassName("info")[0]).css("border", "none");
+                if (scope.isself) {
+                    angular.element(ele[0].getElementsByClassName("info")[0]).css("border", "none");
                 }
             }
         }

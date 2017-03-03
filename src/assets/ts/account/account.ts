@@ -44,10 +44,11 @@ account.controller("signinController", ["$scope", "$state", "mainServer", "mainD
                 webimutil.CookieHelper.setCookie("loginuserid", rep.result.id, exdate.toGMTString());
                 webimutil.CookieHelper.setCookie("loginusertoken", rep.result.token, exdate.toGMTString());
                 //进入主页面前先创建分组
-                var idorname = orderId;//'test_group';//订单ID
+                var idorname ='62033651';// orderId;//'test_group';//订单ID
                 var membersid = <string[]>[];
+                var deptno = '602659';
                 membersid.push(mainDataServer.loginUser.id);//先将自己加入群聊
-                mainServer.group.create(idorname, membersid, idorname).success(function (rep) {
+                mainServer.group.create(idorname, membersid, idorname,deptno).success(function (rep) {
                     if (rep.code == 200) {
                         var group = new webimmodel.Group({
                             id: rep.result.id,
