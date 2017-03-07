@@ -10,34 +10,36 @@ account.controller("signinController", ["$scope", "$state", "mainServer", "mainD
         var userPhone = $state.params["userPhone"];//用户登录的用户名及电话号码
         var orderId = $state.params["orderId"];//订单ID
         var deptno = $state.params["deptno"];//deptno
-        if(!orderId){
-            orderId='0';
-            deptno='0';
+        if (!orderId) {
+            orderId = '0';
+            deptno = '0';
         }
         //获取订单id
 
         if (!userPhone) {
-            alert("没有用户电话");
+            alert("没有用户名");
             return;
         }
 
         //这要考虑是否清除聊天记录(判断是否是一个人登录)
-        conversationServer.historyMessagesCache = {};//清空历史消息
-        mainDataServer.conversation.conversations = [];//清空会话列表
+        if (!webimutil.CookieHelper.getCookie("userPhone")||webimutil.CookieHelper.getCookie("userPhone") != userPhone) {
+            conversationServer.historyMessagesCache = {};//清空历史消息
+            mainDataServer.conversation.conversations = [];//清空会话列表
 
-        if (RongIMLib.RongIMClient && RongIMLib.RongIMClient.getInstance) {
-            try {
-                RongIMSDKServer.logout();
-                //清除之前会话列表SDK问题 TODO:SDK2.0 logout时已清除
-                // var carr = RongIMSDKServer.conversationList();
-                // carr.splice(0, carr.length);
-            } catch (e) {
+            if (RongIMLib.RongIMClient && RongIMLib.RongIMClient.getInstance) {
+                try {
+                    RongIMSDKServer.logout();
+                    //清除之前会话列表SDK问题 TODO:SDK2.0 logout时已清除
+                    // var carr = RongIMSDKServer.conversationList();
+                    // carr.splice(0, carr.length);
+                } catch (e) {
+
+                }
 
             }
-
+            webimutil.CookieHelper.removeCookie("loginuserid");//清除登录状态
+            mainDataServer.loginUser = new webimmodel.UserInfo();//清除用户信息
         }
-        webimutil.CookieHelper.removeCookie("loginuserid");//清除登录状态
-        mainDataServer.loginUser = new webimmodel.UserInfo();//清除用户信息
         mainServer.user.signin(userPhone, "86", '1', 'E').success(function (rep) {
             if (rep.code === 200) {
                 // 登录账户
@@ -47,13 +49,15 @@ account.controller("signinController", ["$scope", "$state", "mainServer", "mainD
                 var exdate = new Date();
                 exdate.setDate(exdate.getDate() + 30);
                 webimutil.CookieHelper.setCookie("loginuserid", rep.result.id, exdate.toGMTString());
+                webimutil.CookieHelper.setCookie("userPhone", userPhone, exdate.toGMTString());
                 webimutil.CookieHelper.setCookie("loginusertoken", rep.result.token, exdate.toGMTString());
                 //进入主页面前先创建分组
                 //var orderId ='62010459';// orderId;//'test_group';//订单ID
                 var membersid = <string[]>[];
                 //var deptno = '603095';
+                console.log(orderId+'==========='+membersid+'========='+deptno);
                 membersid.push(mainDataServer.loginUser.id);//先将自己加入群聊
-                mainServer.group.create(orderId, membersid, orderId,deptno).success(function (rep) {
+                mainServer.group.create(orderId, membersid, orderId, deptno).success(function (rep) {
                     if (rep.code == 200) {
                         var group = new webimmodel.Group({
                             id: rep.result.id,
@@ -66,8 +70,8 @@ account.controller("signinController", ["$scope", "$state", "mainServer", "mainD
                         mainDataServer.contactsList.addGroup(group);
                         membersid = undefined;
                         //alert(1);
-                        var cvsType = 'gt' ;//设置请来源
-                        $state.go("main",{cvsType:cvsType,groupId:group.id});
+                        var cvsType = 'gt';//设置请来源
+                        $state.go("main", { cvsType: cvsType, groupId: group.id });
                         //webimutil.Helper.alertMessage.success("创建成功！", 2);
                         //调到当前群聊天页面暂时不用
                         //$state.go("main.chat", { targetId: group.id, targetType: webimmodel.conversationType.Group });
@@ -76,7 +80,7 @@ account.controller("signinController", ["$scope", "$state", "mainServer", "mainD
                         webimutil.Helper.alertMessage.error("群组超过上限", 2);
                     }
                     //进入主聊天界面
-                    
+
                 }).error(function (err) {
                     webimutil.Helper.alertMessage.error("失败2", 2);
                 });

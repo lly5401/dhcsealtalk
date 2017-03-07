@@ -37,7 +37,8 @@ webimApp.config(["$provide", "$stateProvider", "$urlRouterProvider", "$httpProvi
             //首先进入main.html
              if (userid) {
                 if (!$state.is("main")) {
-                    $state.go("main")
+                    //$state.go("main")
+                    $state.go("account.signin")
                 }
                 return;
             } else {
