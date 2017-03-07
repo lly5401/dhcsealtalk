@@ -101,10 +101,10 @@ mainServer.factory("mainServer", ["$http", "$q", "appconfig", function($http: an
                     }
                 })
             },
-            getUserByPhone: function(region: string, phone: string) {
+            getUserByPhone: function(phone: string) {
                 return $http({
                     method: "get",
-                    url: serverBaseUrl + "/user/find/" + region + "/" + phone
+                    url: serverBaseUrl + "/user/find/" + phone
                 });
             },
             resetPassword: function(password: string, token: string) {
@@ -1729,7 +1729,7 @@ interface mainServer {
         logout(): angular.IHttpPromise<any>
         getInfo(id: string): angular.IHttpPromise<{ result: { id: string, nickname: string, portraitUri: string, displayName: string }, code: number }>
         getBatchInfo(id: string[]): angular.IHttpPromise<{ result: [{ id: string, nickname: string, portraitUri: string, displayName: string }], code: number }>
-        getUserByPhone(region: string, phone: string): angular.IHttpPromise<any>
+        getUserByPhone(phone: string): angular.IHttpPromise<any>
         setNickName(nickname: string): angular.IHttpPromise<any>
         resetPassword(password: string, token: string): angular.IHttpPromise<any>
         modefiyPassword(newPassword: string, oldPassword: string): angular.IHttpPromise<any>

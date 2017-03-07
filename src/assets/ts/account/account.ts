@@ -9,6 +9,11 @@ account.controller("signinController", ["$scope", "$state", "mainServer", "mainD
         //判断参数是否为空    
         var userPhone = $state.params["userPhone"];//用户登录的用户名及电话号码
         var orderId = $state.params["orderId"];//订单ID
+        var deptno = $state.params["deptno"];//deptno
+        if(!orderId){
+            orderId='0';
+            deptno='0';
+        }
         //获取订单id
 
         if (!userPhone) {
@@ -16,7 +21,7 @@ account.controller("signinController", ["$scope", "$state", "mainServer", "mainD
             return;
         }
 
-        //这要考虑是否清除聊天记录
+        //这要考虑是否清除聊天记录(判断是否是一个人登录)
         conversationServer.historyMessagesCache = {};//清空历史消息
         mainDataServer.conversation.conversations = [];//清空会话列表
 
@@ -44,15 +49,15 @@ account.controller("signinController", ["$scope", "$state", "mainServer", "mainD
                 webimutil.CookieHelper.setCookie("loginuserid", rep.result.id, exdate.toGMTString());
                 webimutil.CookieHelper.setCookie("loginusertoken", rep.result.token, exdate.toGMTString());
                 //进入主页面前先创建分组
-                var idorname ='62033651';// orderId;//'test_group';//订单ID
+                //var orderId ='62010459';// orderId;//'test_group';//订单ID
                 var membersid = <string[]>[];
-                var deptno = '602659';
+                //var deptno = '603095';
                 membersid.push(mainDataServer.loginUser.id);//先将自己加入群聊
-                mainServer.group.create(idorname, membersid, idorname,deptno).success(function (rep) {
+                mainServer.group.create(orderId, membersid, orderId,deptno).success(function (rep) {
                     if (rep.code == 200) {
                         var group = new webimmodel.Group({
                             id: rep.result.id,
-                            name: idorname,
+                            name: orderId,
                             imgSrc: "",
                             upperlimit: 500,
                             fact: 1,

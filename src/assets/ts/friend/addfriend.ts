@@ -15,15 +15,16 @@ addfirendCtr.controller("searchfriendController", ["$scope", "$state", "mainServ
             //if (reg.test(content)) {
             if (content) {
                 $scope.getresultnull = false;
-                mainServer.user.getUserByPhone("86", content).success(function (rep: any) {
+                mainServer.user.getUserByPhone(content).success(function (rep: any) {
                     if (rep.code == 200) {
                         var arr = rep.result;
+                        console.log(arr);
                         for (let i = 0, len = arr.length; i < len; i++) {
                             var user = new webimmodel.UserInfo();
-                            user.id = arr.id;
-                            user.nickName = arr.nickname;
-                            user.portraitUri = arr.portraitUri;
-                            user.firstchar = webimutil.ChineseCharacter.getPortraitChar(arr.nickname);
+                            user.id = arr[i].id;
+                            user.nickName = arr[i].nickname;
+                            user.portraitUri = arr[i].portraitUri;
+                            user.firstchar = webimutil.ChineseCharacter.getPortraitChar(arr[i].nickname);
 
                             user.phone = "";
                             user.region = "";

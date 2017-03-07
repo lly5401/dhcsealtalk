@@ -171,7 +171,7 @@ webimApp.config(["$provide", "$stateProvider", "$urlRouterProvider", "$httpProvi
             templateUrl: 'assets/views/account.html',
             controller: ''
         }).state('account.signin', {
-            url: '/signin/:userPhone/:orderId',
+            url: '/signin/:userPhone/:orderId/:deptno',
             //templateUrl: 'assets/views/main.html',
             controller: 'signinController'
         }).state('account.signup', {
